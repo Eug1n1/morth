@@ -1,7 +1,7 @@
-import express, { Router, Request, Response } from 'express'
+import express, { Application } from 'express'
 import { router } from './routes'
 
-const app = express()
+const app: Application = express()
 
 app.use(express.json())
 
