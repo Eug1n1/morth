@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = env("DATABASE_URL")
+}
+
+model Media {
+    uuid     String   @id @default(uuid())
+    filePath String
+    info     String?
+    tags     Tag[]
+    folders  Folder[]
+    // createdAt   DateTime      @default(now())
+}
+
+model Tag {
+    uuid    String  @id @default(uuid())
+    tagNama String
+    media   Media[]
+}
+
+model User {
+    uuid     String @id @default(uuid())
+    login    String
+    password String
+    // Folder   Folder[]
+}
+
+// model Auth {
+//     login    String @id
+//     password String
+//     // Folder   Folder[]
+// }
+
+model Folder {
+    uuid    String  @id @default(uuid())
+    title   String  @unique
+    // title       String
+    private Boolean
+
+    media Media[]
+    // user        User          @relation(fields: [userUuid], references: [uuid])
+    // userUuid    String
+}
+
+model FoldersToScan {
+    uuid   String  @id @default(uuid())
+    path   String  @unique
+    active Boolean
+}
