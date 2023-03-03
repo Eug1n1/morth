@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 
-export let router: Router = Router()
+export const router: Router = Router()
 
 router.get('/', (req: Request, res: Response) => {
     res.json({

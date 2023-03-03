@@ -1,6 +1,7 @@
-import { Router, Request, Response, query } from 'express'
+import { Router, Request, Response } from 'express'
 
 export let router = Router()
+export const router = Router()
 
 router.get('/', (req: Request, res: Response) => {
     if (req.query.type) {
