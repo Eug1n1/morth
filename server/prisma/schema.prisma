@@ -11,12 +11,33 @@ datasource db {
 }
 
 model Media {
-    uuid     String   @id @default(uuid())
+    uuid  String @id @default(uuid())
+    title String
+    info  String
+
+    file File @relation(fields: [fileId], references: [id])
+    fileId     Int
+
+    type MediaType @relation(fields: [typeId], references: [type])
+    typeId      String
+
+    tags    Tag[]
+    folders Folder[]
+
+    uploadedAt DateTime? @default(now())
+}
+
+model File {
+    id       Int     @id @default(autoincrement())
     filePath String
-    info     String?
-    tags     Tag[]
-    folders  Folder[]
-    // createdAt   DateTime      @default(now())
+    thumPath String?
+    Media    Media[]
+}
+
+model MediaType {
+    type String @id
+
+    media Media[]
 }
 
 model Tag {
@@ -26,31 +47,30 @@ model Tag {
 }
 
 model User {
-    uuid     String @id @default(uuid())
+    uuid     String   @id @default(uuid())
     login    String
     password String
-    // Folder   Folder[]
+    Folder   Folder[]
 }
 
-// model Auth {
-//     login    String @id
-//     password String
-//     // Folder   Folder[]
-// }
-
 model Folder {
-    uuid    String  @id @default(uuid())
-    title   String  @unique
-    // title       String
-    private Boolean
-
-    media Media[]
-    // user        User          @relation(fields: [userUuid], references: [uuid])
-    // userUuid    String
+    uuid     String  @id @default(uuid())
+    title    String
+    private  Boolean
+    media    Media[]
+    user     User    @relation(fields: [userUuid], references: [uuid])
+    userUuid String
 }
 
 model FoldersToScan {
-    uuid   String  @id @default(uuid())
-    path   String  @unique
-    active Boolean
+    id       Int     @id @default(autoincrement())
+    path     String  @unique
+    isActive Boolean
+}
+
+model Settings {
+    port     Int
+    logLevel String
+
+    @@id([port, logLevel])
 }
