@@ -1,5 +1,7 @@
 import express, { Application } from 'express'
 import morgan from 'morgan'
+import cors from 'cors'
+import path from 'path'
 
 import { router } from './routes'
 import { logger } from './utils/logger'
@@ -18,6 +20,8 @@ const morganMiddleware = morgan(
 const app: Application = express()
 
 app.use(express.json())
+app.use(cors())
+app.use(express.static(path.join(__dirname, 'static')))
 app.use(morganMiddleware)
 
 app.use('/api', router)
