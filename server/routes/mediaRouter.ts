@@ -1,30 +1,18 @@
 import { Router, Request, Response } from 'express'
+import MediaController from '../controllers/mediaController'
 
-export let router = Router()
 export const router = Router()
 
-router.get('/', (req: Request, res: Response) => {
-    if (req.query.type) {
-        res.json({
-            type: req.query.type 
-        })
+const mediaController = new MediaController()
+router.get('/', mediaController.getAll)
 
-        return
-    }
+router.get('/:uuid', mediaController.getOne)
 
-    res.json({
-        media: 'all',
-    })
-})
-
-router.get('/:uuid', (req: Request, res: Response) => {
-    res.json({
-        uuid: req.params.uuid,
-    })
-})
+router.get('/file/:uuid', mediaController.getMedia)
 
 router.post('/', (req: Request, res: Response) => {
     res.json({
-        file: req.query.file
-    })    
+        file: req.query.file,
+    })
 })
+
