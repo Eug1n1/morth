@@ -30,8 +30,9 @@ model Media {
     uuid String @id @default(uuid())
 
     title       String
-    description String @default("")
-    filePath    String @unique
+    description String  @default("")
+    filePath    String  @unique
+    isPrivate   Boolean @default(false)
 
     Tags    Tag[]
     Folders Folder[]
@@ -45,7 +46,7 @@ model Media {
     userUuid String
 
     Thumb     Thumbnail @relation(fields: [thumbUuid], references: [uuid])
-    thumbUuid String    @unique
+    thumbUuid String
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -56,7 +57,7 @@ model Thumbnail {
 
     thumbPath String // TODO: set default path
 
-    Media Media?
+    Media Media[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -65,7 +66,8 @@ model Thumbnail {
 model Folder {
     uuid String @id @default(uuid())
 
-    name String
+    name      String
+    isPrivate Boolean @default(false)
 
     Media Media[]
 
