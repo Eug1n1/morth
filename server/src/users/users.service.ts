@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { Folder, Like, Media, User, View } from "@prisma/client";
 import { PrismaService } from "src/prisma/prisma.service";
 import { UpdateUserDto } from "./dto";
 
@@ -6,8 +7,8 @@ import { UpdateUserDto } from "./dto";
 export class UsersService {
     constructor(private prisma: PrismaService) {}
 
-    async getUser(username: string) {
-        const user = await this.prisma.user.findUnique({
+    async getUser(username: string): Promise<Partial<User> | null> {
+        const user = this.prisma.user.findUnique({
             where: {
                 username,
             },
@@ -20,8 +21,8 @@ export class UsersService {
         return user;
     }
 
-    async getUsersMedia(username: string) {
-        const media = await this.prisma.media.findMany({
+    async getUsersMedia(username: string): Promise<Partial<Media>[]> {
+        const media = this.prisma.media.findMany({
             where: {
                 User: {
                     username,
@@ -45,8 +46,8 @@ export class UsersService {
 
         return media;
     }
-    async getUsersFolders(username: string) {
-        const folders = await this.prisma.folder.findMany({
+    async getUsersFolders(username: string): Promise<Partial<Folder>[]> {
+        const folders = this.prisma.folder.findMany({
             where: {
                 User: {
                     username,
@@ -65,8 +66,10 @@ export class UsersService {
 
         return folders;
     }
-    async getUsersLikes(username: string) {
-        const likes = await this.prisma.like.findMany({
+    async getUsersLikes(
+        username: string,
+    ): Promise<{ Media: Partial<Media> }[]> {
+        const likes = this.prisma.like.findMany({
             where: {
                 User: {
                     username,
@@ -95,8 +98,10 @@ export class UsersService {
         return likes;
     }
 
-    async getUsersViews(username: string) {
-        const views = await this.prisma.view.findMany({
+    async getUsersViews(
+        username: string,
+    ): Promise<{ Media: Partial<Media> }[]> {
+        const views = this.prisma.view.findMany({
             where: {
                 User: {
                     username,
@@ -125,7 +130,10 @@ export class UsersService {
         return views;
     }
 
-    async updateUser(userUuid: string, dto: UpdateUserDto) {
+    async updateUser(
+        userUuid: string,
+        dto: UpdateUserDto,
+    ): Promise<Partial<User>> {
         const user = this.prisma.user.update({
             where: {
                 uuid: userUuid,

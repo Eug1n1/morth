@@ -13,9 +13,9 @@ datasource db {
 model User {
     uuid String @id @default(uuid())
 
-    username String @unique
-    login    String
-    password String
+    username String  @unique
+    hash     String
+    hashedRt String?
 
     Media   Media[]
     Views   View[]
@@ -32,7 +32,7 @@ model Media {
     title       String
     description String  @default("")
     filePath    String  @unique
-    isPrivate   Boolean @default(false)
+    isPrivate   Boolean @default(false) // TODO: a nahuy nuzhno
 
     Tags    Tag[]
     Folders Folder[]
@@ -67,7 +67,7 @@ model Folder {
     uuid String @id @default(uuid())
 
     name      String
-    isPrivate Boolean @default(false)
+    isPrivate Boolean @default(false) // TODO: a nahuy nuzhno
 
     Media Media[]
 
