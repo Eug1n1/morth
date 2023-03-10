@@ -1,14 +1,5 @@
-import {
-    Controller,
-    Get,
-    Header,
-    Param,
-    Res,
-    Headers,
-    StreamableFile,
-} from "@nestjs/common";
+import { Controller, Get, Header, Param, Res, Headers } from "@nestjs/common";
 import { Response } from "express";
-import { createReadStream, statSync } from "fs";
 import { MediaService } from "./media.service";
 
 @Controller("api/media")
@@ -31,13 +22,14 @@ export class MediaController {
         @Param("uuid") uuid: string,
         // @Headers("range") range: string,
         @Res() res: Response,
-        @Headers() headers: Record<string, string>
+        @Headers() headers: Record<string, string>,
     ) {
-        const {range} = headers
-        const { headers: respHeaders, status, stream } = await this.mediaService.getMediaBlob(
-            uuid,
-            range,
-        );
+        const { range } = headers;
+        const {
+            headers: respHeaders,
+            status,
+            stream,
+        } = await this.mediaService.getMediaBlob(uuid, range);
 
         res.writeHead(status, respHeaders);
         stream?.pipe(res);

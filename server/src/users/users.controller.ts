@@ -7,8 +7,8 @@ export class UsersController {
     constructor(private usersService: UsersService) {}
 
     @Get("/:username")
-    getUser(@Param("username") username: string) {
-        return this.usersService.getUser(username);
+    async getUser(@Param("username") username: string) {
+        return await this.usersService.getUser(username);
     }
 
     @Get("/:username/media")

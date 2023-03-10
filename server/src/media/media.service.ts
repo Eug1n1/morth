@@ -5,10 +5,13 @@ import * as filePath from "path";
 
 @Injectable()
 export class MediaService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService) { }
 
     async getAllMedia() {
         const media = await this.prisma.media.findMany({
+            where: {
+                isPrivate: false,
+            },
             select: {
                 uuid: true,
                 title: true,
@@ -20,6 +23,11 @@ export class MediaService {
                 Thumb: {
                     select: {
                         thumbPath: true,
+                    },
+                },
+                Tags: {
+                    select: {
+                        name: true
                     },
                 },
                 _count: {
@@ -35,13 +43,15 @@ export class MediaService {
     }
 
     async getMediaByUuid(uuid: string) {
-        const media = await this.prisma.media.findUnique({
+        const media = await this.prisma.media.findFirst({
             where: {
                 uuid,
+                isPrivate: false
             },
             select: {
                 uuid: true,
                 title: true,
+                isPrivate: true,
                 Type: {
                     select: {
                         name: true,
@@ -60,6 +70,11 @@ export class MediaService {
                 },
             },
         });
+
+        if (media || media?.['isPrivate'] == true) {
+            //TODO: throw error
+            throw "no media"
+        }
 
         return media;
     }
