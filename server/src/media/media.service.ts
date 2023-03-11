@@ -1,90 +1,70 @@
-import { Injectable } from "@nestjs/common";
+import { ForbiddenException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { createReadStream, statSync } from "fs";
-import * as filePath from "path";
+import { MediaInfoSelect } from "../common/selects";
 
 @Injectable()
 export class MediaService {
     constructor(private prisma: PrismaService) { }
 
-    async getAllMedia() {
+    async getAllMedia(uuid: string) {
         const media = await this.prisma.media.findMany({
             where: {
                 isPrivate: false,
             },
-            select: {
-                uuid: true,
-                title: true,
-                Type: {
-                    select: {
-                        name: true,
-                    },
-                },
-                Thumb: {
-                    select: {
-                        thumbPath: true,
-                    },
-                },
-                Tags: {
-                    select: {
-                        name: true
-                    },
-                },
-                _count: {
-                    select: {
-                        Views: true,
-                        Likes: true,
-                    },
-                },
-            },
+            ...MediaInfoSelect,
         });
 
-        return media;
-    }
+        if (uuid) {
+            const userPrivateMedia = await this.prisma.media.findMany({
+                where: {
+                    User: {
+                        uuid,
+                    },
+                    isPrivate: true,
+                },
+                ...MediaInfoSelect,
+            });
 
-    async getMediaByUuid(uuid: string) {
-        const media = await this.prisma.media.findFirst({
-            where: {
-                uuid,
-                isPrivate: false
-            },
-            select: {
-                uuid: true,
-                title: true,
-                isPrivate: true,
-                Type: {
-                    select: {
-                        name: true,
-                    },
-                },
-                Thumb: {
-                    select: {
-                        thumbPath: true,
-                    },
-                },
-                _count: {
-                    select: {
-                        Views: true,
-                        Likes: true,
-                    },
-                },
-            },
-        });
-
-        if (media || media?.['isPrivate'] == true) {
-            //TODO: throw error
-            throw "no media"
+            media.push(...userPrivateMedia);
         }
 
         return media;
     }
 
-    async getMediaBlob(uuid: string, range: string) {
-        const media = await this.prisma.media.findUnique({
+    async getMediaByUuid(userUuid: string, uuid: string) {
+        const media = await this.prisma.media.findFirst({
+            where: {
+                uuid,
+            },
+            ...MediaInfoSelect,
+        });
+
+        if (!media) {
+            //TODO: throw error
+            throw new ForbiddenException("no media");
+        }
+
+        if (media["isPrivate"] && media["User"]["uuid"] != userUuid) {
+            throw new ForbiddenException();
+        }
+
+        return media;
+    }
+
+    async getMediaBlob(userUuid: string, uuid: string, range: string) {
+        const media = await this.prisma.media.findFirst({
             where: {
                 uuid,
             },
             select: {
+                isPrivate: true,
+                User: {
+                    select: {
+                        uuid: true,
+                        username: true,
+                    },
+                },
                 filePath: true,
                 Type: {
                     select: {
@@ -95,8 +75,11 @@ export class MediaService {
         });
 
         if (!media) {
-            throw "no media";
-            //TODO: throw error
+            throw new ForbiddenException("no media"); // TODO: error message
+        }
+
+        if (media["isPrivate"] && media["User"]["uuid"] != userUuid) {
+            throw new ForbiddenException();
         }
 
         const { filePath } = media;
