@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    ForbiddenException,
     HttpCode,
     HttpStatus,
     Post,
@@ -8,13 +9,14 @@ import {
     UseGuards,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import { User } from "src/common/decorators";
 import { AuthService } from "./auth.service";
 import { AuthDto } from "./dto";
-import { JwtPayload, Tokens } from "./types";
+import { Tokens } from "./types";
 
 @Controller("api/auth")
 export class AuthController {
-    constructor(private authService: AuthService) { }
+    constructor(private authService: AuthService) {}
 
     @Post("/local/signup")
     @HttpCode(HttpStatus.CREATED)
@@ -31,8 +33,10 @@ export class AuthController {
     @UseGuards(AuthGuard("jwt"))
     @Post("/logout")
     @HttpCode(HttpStatus.OK)
-    logout(@Req() req: Request & { user: JwtPayload }) {
-        const uuid: string = req.user["sub"];
+    logout(@User("sub") uuid: string) {
+        if(!uuid) {
+            throw new ForbiddenException('go out pls')
+        }
 
         this.authService.logout(uuid);
     }
@@ -40,9 +44,10 @@ export class AuthController {
     @UseGuards(AuthGuard("jwt-refresh"))
     @Post("/refresh")
     @HttpCode(HttpStatus.OK)
-    refreshTokens(@Req() req: Request & { user: JwtPayload }) {
-        const uuid: string = req.user["sub"];
-
-        this.authService.logout(uuid);
+    refreshTokens(
+        @User("sub") uuid: string,
+        @User("refreshToken") token: string,
+    ) {
+        return this.authService.refreshTokens(uuid, token);
     }
 }

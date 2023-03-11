@@ -16,7 +16,7 @@ export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
-    ) { }
+    ) {}
 
     async signupLocal(dto: AuthDto): Promise<Tokens> {
         const hash = await argon2.hash(dto.password);
@@ -39,7 +39,6 @@ export class AuthService {
         });
 
         const tokens = await this.getTokens(user.uuid, user.username);
-        this.updateRtHash(user.uuid, tokens.refresh_token);
 
         return tokens;
     }
@@ -67,7 +66,6 @@ export class AuthService {
         }
 
         const tokens = await this.getTokens(user.uuid, user.username);
-        this.updateRtHash(user.uuid, tokens.refresh_token);
 
         return tokens;
     }
@@ -108,7 +106,6 @@ export class AuthService {
         }
 
         const tokens = await this.getTokens(user.uuid, user.username);
-        this.updateRtHash(user.uuid, tokens.refresh_token); // TODO: move into getTokens function
 
         return tokens;
     }
@@ -121,7 +118,7 @@ export class AuthService {
 
         const [at, rt] = await Promise.all([
             this.jwtService.signAsync(jwtPayload, {
-                secret: "at",
+                secret: "at_secret",
                 expiresIn: "15m",
             }),
             this.jwtService.signAsync(jwtPayload, {
@@ -129,6 +126,8 @@ export class AuthService {
                 expiresIn: "7d",
             }),
         ]);
+
+        this.updateRtHash(userUuid, rt); // TODO: move into getTokens function
 
         return {
             access_token: at,
