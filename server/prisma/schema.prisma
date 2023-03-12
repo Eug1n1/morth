@@ -11,7 +11,7 @@ datasource db {
 }
 
 model User {
-    uuid String @id @default(uuid())
+    cuid String @id @default(cuid())
 
     username String  @unique
     hash     String
@@ -22,12 +22,15 @@ model User {
     Likes   Like[]
     Folders Folder[]
 
+    Preview   Image  @relation(fields: [previewCuid], references: [cuid])
+    previewCuid String
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
 model Media {
-    uuid String @id @default(uuid())
+    cuid String @id @default(cuid())
 
     title       String
     description String  @default("")
@@ -39,49 +42,57 @@ model Media {
     Views   View[]
     Likes   Like[]
 
-    Type     Type   @relation(fields: [typeUuid], references: [uuid])
-    typeUuid String
+    Type     Type   @relation(fields: [typeCuid], references: [cuid])
+    typeCuid String
 
-    User     User   @relation(fields: [userUuid], references: [uuid])
-    userUuid String
+    User     User   @relation(fields: [userCuid], references: [cuid])
+    userCuid String
 
-    Thumb     Thumbnail @relation(fields: [thumbUuid], references: [uuid])
-    thumbUuid String
+    Thumb         Image  @relation(references: [cuid], fields: [thumbnailCuid])
+    thumbnailCuid String
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
-model Thumbnail {
-    uuid String @id @default(uuid())
+model Image {
+    cuid String @id @default(cuid())
 
-    thumbPath String // TODO: set default path
+    imagePath String // TODO: set default path
 
-    Media Media[]
+    Media  Media[]
+    User   User[]
+    Folder Folder[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@map("Thumbnail")
 }
 
 model Folder {
-    uuid String @id @default(uuid())
+    cuid String @id @default(cuid())
 
     name      String
     isPrivate Boolean @default(false) // TODO: a nahuy nuzhno
 
     Media Media[]
 
-    User     User   @relation(fields: [userUuid], references: [uuid])
-    userUuid String
+    User     User   @relation(fields: [userCuid], references: [cuid])
+    userCuid String
+
+    Preview   Image?  @relation(fields: [previewCuid], references: [cuid])
+    previewCuid String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    @@unique([name, userUuid])
+    @@unique([name, userCuid])
+    @@index([userCuid])
 }
 
 model Tag {
-    uuid String @id @default(uuid())
+    cuid String @id @default(cuid())
 
     name String @unique
 
@@ -92,7 +103,7 @@ model Tag {
 }
 
 model Type {
-    uuid String @id @default(uuid())
+    cuid String @id @default(cuid())
 
     name String
 
@@ -103,27 +114,27 @@ model Type {
 }
 
 model View {
-    id Int @id @default(autoincrement())
+    cuid Int @id @default(autoincrement())
 
-    Media     Media  @relation(fields: [mediaUuid], references: [uuid])
-    mediaUuid String
+    Media     Media  @relation(fields: [mediaCuid], references: [cuid])
+    mediaCuid String
 
-    User     User   @relation(fields: [userUuid], references: [uuid])
-    userUuid String
+    User     User   @relation(fields: [userCuid], references: [cuid])
+    userCuid String
 
     createdAt DateTime @default(now())
 }
 
 model Like {
-    id Int @id @default(autoincrement())
+    cuid Int @id @default(autoincrement())
 
-    Media     Media  @relation(fields: [mediaUuid], references: [uuid])
-    mediaUuid String
+    Media     Media  @relation(fields: [mediaCuid], references: [cuid])
+    mediaCuid String
 
-    User     User   @relation(fields: [userUuid], references: [uuid])
-    userUuid String
+    User     User   @relation(fields: [userCuid], references: [cuid])
+    userCuid String
 
     createdAt DateTime @default(now())
 
-    @@unique([userUuid, mediaUuid])
+    @@unique([userCuid, mediaCuid])
 }
