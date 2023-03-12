@@ -7,9 +7,9 @@ import { TagsService } from "./tags.service";
 export class TagsController {
     constructor(private tagsService: TagsService) {}
 
-    @UseGuards(AuthGuard(['jwt']))
+    @UseGuards(AuthGuard(["jwt", "anonymous"]))
     @Get("/")
-    async getAll(@User('sub') userUuid: string) {
+    async getAll(@User("sub") userUuid: string) {
         return await this.tagsService.getAll(userUuid);
     }
 }

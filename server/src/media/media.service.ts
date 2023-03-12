@@ -2,40 +2,50 @@ import { ForbiddenException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { createReadStream, statSync } from "fs";
 import { MediaInfoSelect } from "../common/selects";
+import { UpdateMediaDto } from "src/media/dto";
 
 @Injectable()
 export class MediaService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService) {}
 
-    async getAllMedia(uuid: string) {
+    async getAllMedia(userUuid: string) {
         const media = await this.prisma.media.findMany({
             where: {
-                isPrivate: false,
+                OR: [
+                    {
+                        isPrivate: false,
+                    },
+                    {
+                        isPrivate: true,
+                        User: {
+                            uuid: userUuid ?? "anon",
+                        },
+                    },
+                ],
             },
             ...MediaInfoSelect,
         });
 
-        if (uuid) {
-            const userPrivateMedia = await this.prisma.media.findMany({
-                where: {
-                    User: {
-                        uuid,
-                    },
-                    isPrivate: true,
-                },
-                ...MediaInfoSelect,
-            });
-
-            media.push(...userPrivateMedia);
-        }
-
         return media;
     }
 
-    async getMediaByUuid(userUuid: string, uuid: string) {
+    async getMediaByUuid(userUuid: string, mediaUuid: string) {
+        console.log(mediaUuid);
         const media = await this.prisma.media.findFirst({
             where: {
-                uuid,
+                OR: [
+                    {
+                        isPrivate: false,
+                        uuid: mediaUuid,
+                    },
+                    {
+                        isPrivate: true,
+                        uuid: mediaUuid,
+                        User: {
+                            uuid: userUuid ?? "anon",
+                        },
+                    },
+                ],
             },
             ...MediaInfoSelect,
         });
@@ -45,26 +55,27 @@ export class MediaService {
             throw new ForbiddenException("no media");
         }
 
-        if (media["isPrivate"] && media["User"]["uuid"] != userUuid) {
-            throw new ForbiddenException();
-        }
-
         return media;
     }
 
-    async getMediaBlob(userUuid: string, uuid: string, range: string) {
+    async getMediaBlob(userUuid: string, mediaUuid: string, range: string) {
         const media = await this.prisma.media.findFirst({
             where: {
-                uuid,
+                OR: [
+                    {
+                        isPrivate: false,
+                        uuid: mediaUuid,
+                    },
+                    {
+                        isPrivate: true,
+                        uuid: mediaUuid,
+                        User: {
+                            uuid: userUuid ?? "anon",
+                        },
+                    },
+                ],
             },
             select: {
-                isPrivate: true,
-                User: {
-                    select: {
-                        uuid: true,
-                        username: true,
-                    },
-                },
                 filePath: true,
                 Type: {
                     select: {
@@ -76,10 +87,6 @@ export class MediaService {
 
         if (!media) {
             throw new ForbiddenException("no media"); // TODO: error message
-        }
-
-        if (media["isPrivate"] && media["User"]["uuid"] != userUuid) {
-            throw new ForbiddenException();
         }
 
         const { filePath } = media;
@@ -110,17 +117,10 @@ export class MediaService {
             }
         }
 
-        // const ranges = range.split("-");
-
-        // const CHUNK_SIZE = 10 ** 5;
-
         const parts = range.replace(/bytes=/, "").split("-");
+
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : size - 1;
-        // const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + CHUNK_SIZE, size - 1);
-
-        // const start = Number(range.replace(/\D/g, ""));
-        // const end = Math.min(start + CHUNK_SIZE, size - 1);
 
         const contentLength = end - start + 1;
 
@@ -135,5 +135,37 @@ export class MediaService {
             status: 206,
             stream: stream,
         };
+    }
+
+    async updateMedia(
+        userUuid: string,
+        mediaUuid: string,
+        dto: UpdateMediaDto,
+    ) {
+        // const tags = dto["Tags"];
+        delete dto["Tags"];
+
+        await this.prisma.media.updateMany({
+            where: {
+                uuid: mediaUuid,
+                User: {
+                    uuid: userUuid,
+                },
+            },
+            data: {
+                ...dto,
+            },
+        });
+
+        //TODO: tags
+        return this.prisma.media.findFirst({
+            where: {
+                uuid: mediaUuid,
+                User: {
+                    uuid: userUuid,
+                },
+            },
+            ...MediaInfoSelect
+        })
     }
 }

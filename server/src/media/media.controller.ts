@@ -1,33 +1,46 @@
-import { Controller, Get, Header, Param, Res, Headers, UseGuards } from "@nestjs/common";
+import {
+    Controller,
+    Get,
+    Header,
+    Param,
+    Res,
+    Headers,
+    UseGuards,
+    Patch,
+    Body,
+    Post,
+    UploadedFile,
+    UseInterceptors,
+} from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { User } from "src/common/decorators";
+import { UpdateMediaDto, UploadMediaDto } from "./dto";
 import { MediaService } from "./media.service";
 
+@UseGuards(AuthGuard(["jwt", "anonymous"]))
 @Controller("api/media")
 export class MediaController {
     constructor(private mediaService: MediaService) { }
 
-    @UseGuards(AuthGuard(['jwt', 'anonymous']))
     @Get("/")
-    getAll(@User('sub') uuid: string) {
+    getAll(@User("sub") uuid: string) {
         return this.mediaService.getAllMedia(uuid);
     }
 
-    @UseGuards(AuthGuard(['jwt', 'anonymous']))
     @Get("/:uuid")
-    getOneByUuid(@User('sub') userUuid: string, @Param("uuid") uuid: string) {
+    getOneByUuid(@User("sub") userUuid: string, @Param("uuid") uuid: string) {
         return this.mediaService.getMediaByUuid(userUuid, uuid);
     }
 
-    @UseGuards(AuthGuard(['jwt', 'anonymous']))
     @Get("/:uuid/blob")
     @Header("Accept-Ranges", "bytes")
     async getStreamVideo(
-        @User('sub') userUuid: string,
+        @User("sub") userUuid: string,
         @Param("uuid") mediaUuid: string,
         @Res() res: Response,
-        @Headers('range') range: string,
+        @Headers("range") range: string,
     ) {
         const {
             headers: respHeaders,
@@ -37,5 +50,21 @@ export class MediaController {
 
         res.writeHead(status, respHeaders);
         stream?.pipe(res);
+    }
+
+    @Patch("/:uuid")
+    updateMedia(
+        @User("sub") userUuid: string,
+        @Param("uuid") mediaUuid: string,
+        @Body() dto: UpdateMediaDto,
+    ) {
+        return this.mediaService.updateMedia(userUuid, mediaUuid, dto);
+    }
+
+    @Post("/upload")
+    @UseInterceptors(FileInterceptor("file"))
+    uploadMedia(@UploadedFile() file: Express.Multer.File, @Body() body: UploadMediaDto) {
+        console.log(body.title)
+        console.log(file);
     }
 }

@@ -5,39 +5,38 @@ import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class TagsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService) {}
 
     async getAll(userUuid: string): Promise<Partial<Tag>[]> {
         const tags = await this.prisma.tag.findMany({
             where: {
-                Media: {
-                    some: {
-                        isPrivate: false,
-                    },
-                },
-            },
-            ...TagNameSelect
-        });
-
-        if (userUuid) {
-            const userPrivateTags = await this.prisma.tag.findMany({
-                where: {
-                    Media: {
-                        none: {
-                            isPrivate: false,
-                        },
-                        some: {
-                            User: {
-                                uuid: userUuid,
+                OR: [
+                    {
+                        Media: {
+                            some: {
+                                isPrivate: false,
                             },
                         },
                     },
-                },
-                ...TagNameSelect
-            });
-
-            tags.push(...userPrivateTags);
-        }
+                    {
+                        Media: {
+                            none: {
+                                isPrivate: false,
+                            },
+                            some: {
+                                User: {
+                                    uuid: userUuid ?? 'anon',
+                                },
+                            },
+                        },
+                    },
+                ],
+            },
+            select: {
+                uuid: true,
+                name: true,
+            }
+        });
 
         return tags;
     }
@@ -51,7 +50,7 @@ export class TagsService {
                     },
                 },
             },
-            ...TagNameSelect
+            ...TagNameSelect,
         });
 
         return tags;
