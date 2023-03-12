@@ -7,6 +7,8 @@ import { TagsModule } from "./tags/tags.module";
 import { AuthModule } from "./auth/auth.module";
 import { FoldersModule } from "./folders/folders.module";
 import { ConfigModule } from "@nestjs/config";
+import { APP_GUARD } from "@nestjs/core";
+import { DefaultGuard } from "./common/guards";
 
 @Module({
     imports: [
@@ -18,8 +20,14 @@ import { ConfigModule } from "@nestjs/config";
         FoldersModule,
         ConfigModule.forRoot({
             isGlobal: true
-        })
+        }),
     ],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: DefaultGuard
+        }
+    ]
 })
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {

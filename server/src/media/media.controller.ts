@@ -19,7 +19,6 @@ import { User } from "src/common/decorators";
 import { UpdateMediaDto, UploadMediaDto } from "./dto";
 import { MediaService } from "./media.service";
 
-@UseGuards(AuthGuard(["jwt", "anonymous"]))
 @Controller("api/media")
 export class MediaController {
     constructor(private mediaService: MediaService) { }
@@ -33,6 +32,11 @@ export class MediaController {
     getOneByUuid(@User("sub") userUuid: string, @Param("uuid") uuid: string) {
         return this.mediaService.getMediaByUuid(userUuid, uuid);
     }
+
+    // @Get("/:uuid")
+    // getOneByUuid(@User("sub") userUuid: string, @Param("uuid") uuid: string) {
+    //     return this.mediaService.getMediaByUuid(userUuid, uuid);
+    // }
 
     @Get("/:uuid/blob")
     @Header("Accept-Ranges", "bytes")

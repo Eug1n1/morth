@@ -9,7 +9,8 @@ import {
     UseGuards,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { User } from "src/common/decorators";
+import { DisableGuard, User } from "src/common/decorators";
+import { RefreshGuard } from "src/common/guards";
 import { AuthService } from "./auth.service";
 import { AuthDto } from "./dto";
 import { Tokens } from "./types";
@@ -18,19 +19,20 @@ import { Tokens } from "./types";
 export class AuthController {
     constructor(private authService: AuthService) {}
 
+    @DisableGuard()
     @Post("/local/signup")
     @HttpCode(HttpStatus.CREATED)
     signupLocal(@Body() dto: AuthDto): Promise<Tokens> {
         return this.authService.signupLocal(dto);
     }
 
+    @DisableGuard()
     @Post("/local/signin")
     @HttpCode(HttpStatus.OK)
     signinLocal(@Body() dto: AuthDto): Promise<Tokens> {
         return this.authService.signinLocal(dto);
     }
 
-    @UseGuards(AuthGuard("jwt"))
     @Post("/logout")
     @HttpCode(HttpStatus.OK)
     logout(@User("sub") uuid: string) {
@@ -41,7 +43,8 @@ export class AuthController {
         this.authService.logout(uuid);
     }
 
-    @UseGuards(AuthGuard("jwt-refresh"))
+    @DisableGuard()
+    @UseGuards(RefreshGuard)
     @Post("/refresh")
     @HttpCode(HttpStatus.OK)
     refreshTokens(

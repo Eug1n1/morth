@@ -4,7 +4,6 @@ import { User } from "src/common/decorators";
 import { UpdateUserDto } from "./dto";
 import { UsersService } from "./users.service";
 
-@UseGuards(AuthGuard(["jwt", "anonymous"]))
 @Controller("api/users")
 export class UsersController {
     constructor(private usersService: UsersService) {}
