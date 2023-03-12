@@ -9,5 +9,5 @@ export class UpdateUserDto {
     @MinLength(8)
     @MaxLength(24)
     @IsOptional()
-    password?: string;
+    hash?: string;
 }
