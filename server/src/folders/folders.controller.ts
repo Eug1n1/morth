@@ -7,15 +7,15 @@ export class FoldersController {
     constructor(private foldersService: FoldersService) { }
 
     @Get("/")
-    getAll(@User("sub") userUuid: string) {
-        return this.foldersService.getAll(userUuid);
+    getAll(@User("sub") userCuid: string) {
+        return this.foldersService.getAll(userCuid);
     }
 
     @Get("/:folder/media")
-    getOneByUuid(
-        @User("sub") userUuid: string,
-        @Param("folder") folderUuid: string,
+    getOneByCuid(
+        @User("sub") userCuid: string,
+        @Param("folder") folderCuid: string,
     ) {
-        return this.foldersService.getFolderMedia(userUuid, folderUuid);
+        return this.foldersService.getFolderMedia(userCuid, folderCuid);
     }
 }

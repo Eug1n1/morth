@@ -1,13 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { Tag } from "@prisma/client";
-import { TagNameSelect } from "src/common/selects";
+import { User } from "src/common/decorators";
+import { MediaInfoSelect, TagNameSelect } from "src/common/selects";
 import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class TagsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService) {}
 
-    async getAll(userUuid: string): Promise<Partial<Tag>[]> {
+    async getAll(userCuid: string): Promise<Partial<Tag>[]> {
         const tags = await this.prisma.tag.findMany({
             where: {
                 OR: [
@@ -25,7 +26,7 @@ export class TagsService {
                             },
                             some: {
                                 User: {
-                                    uuid: userUuid ?? "anon",
+                                    cuid: userCuid ?? "anon",
                                 },
                             },
                         },
@@ -33,7 +34,7 @@ export class TagsService {
                 ],
             },
             select: {
-                uuid: true,
+                cuid: true,
                 name: true,
             },
         });
@@ -41,18 +42,35 @@ export class TagsService {
         return tags;
     }
 
-    getByTagUuid(): Promise<Partial<Tag>[]> {
-        const tags = this.prisma.tag.findMany({
+    async getTagMedia(userCuid: string, tagName: string) {
+        const media = await this.prisma.media.findMany({
             where: {
-                Media: {
-                    some: {
+                OR: [
+                    {
                         isPrivate: false,
+                        Tags: {
+                            some: {
+                                name: tagName 
+                            }
+                        }
                     },
-                },
+                    {
+                        isPrivate: true,
+                        User: {
+                            cuid: userCuid,
+                        },
+                        Tags: {
+                            some: {
+                                name: tagName 
+                            }
+                        }
+                    },
+                ],
             },
-            ...TagNameSelect,
+            ...MediaInfoSelect,
         });
 
-        return tags;
+
+        return media
     }
 }

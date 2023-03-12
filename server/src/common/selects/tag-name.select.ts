@@ -1,6 +1,6 @@
 export const TagNameSelect = {
     select: {
-        uuid: true,
+        cuid: true,
         name: true,
     },
 };

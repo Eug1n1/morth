@@ -20,26 +20,26 @@ export class AuthService {
     ) { }
 
     async signupLocal(dto: AuthDto): Promise<Tokens> {
-        const hash = await argon2.hash(dto.password);
+        const hash = await argon2.hash(dto['password']);
 
         let user = await this.prisma.user.findUnique({
             where: {
-                username: dto.username,
+                username: dto['username'],
             },
         });
 
         if (user) {
-            throw new HttpException("gser exists", HttpStatus.NOT_ACCEPTABLE);
+            throw new HttpException("user exists", HttpStatus.NOT_ACCEPTABLE);
         }
 
         user = await this.prisma.user.create({
             data: {
-                username: dto.username,
-                hash,
+                username: dto['username'],
+                hash
             },
         });
 
-        const tokens = await this.getTokens(user.uuid, user.username);
+        const tokens = await this.getTokens(user.cuid, user.username);
 
         return tokens;
     }
@@ -47,11 +47,11 @@ export class AuthService {
     async signinLocal(dto: AuthDto): Promise<Tokens> {
         const user = await this.prisma.user.findUnique({
             where: {
-                username: dto.username,
+                username: dto['username'],
             },
             select: {
                 username: true,
-                uuid: true,
+                cuid: true,
                 hash: true,
             },
         });
@@ -60,21 +60,21 @@ export class AuthService {
             throw new ForbiddenException(); // TODO: error message
         }
 
-        const isPasswordMatches = await argon2.verify(user.hash, dto.password);
+        const isPasswordMatches = await argon2.verify(user.hash, dto['password']);
 
         if (!isPasswordMatches) {
             throw new ForbiddenException(); // TODO: error message
         }
 
-        const tokens = await this.getTokens(user.uuid, user.username);
+        const tokens = await this.getTokens(user.cuid, user.username);
 
         return tokens;
     }
 
-    async logout(uuid: string) {
+    async logout(cuid: string) {
         await this.prisma.user.updateMany({
             where: {
-                uuid,
+                cuid,
                 hashedRt: {
                     not: null,
                 },
@@ -85,15 +85,15 @@ export class AuthService {
         });
     }
 
-    async refreshTokens(uuid: string, rt: string) {
+    async refreshTokens(cuid: string, rt: string) {
         const user = await this.prisma.user.findUnique({
             where: {
-                uuid,
+                cuid,
             },
             select: {
                 hashedRt: true,
                 username: true,
-                uuid: true,
+                cuid: true,
             },
         });
 
@@ -106,14 +106,14 @@ export class AuthService {
             throw new ForbiddenException("Access denied");
         }
 
-        const tokens = await this.getTokens(user.uuid, user.username);
+        const tokens = await this.getTokens(user.cuid, user.username);
 
         return tokens;
     }
 
-    async getTokens(userUuid: string, username: string): Promise<Tokens> {
+    async getTokens(userCuid: string, username: string): Promise<Tokens> {
         const jwtPayload: JwtPayload = {
-            sub: userUuid,
+            sub: userCuid,
             username: username,
         };
 
@@ -130,7 +130,7 @@ export class AuthService {
             }),
         ]);
 
-        this.updateRtHash(userUuid, rt); // TODO: move into getTokens function
+        this.updateRtHash(userCuid, rt); // TODO: move into getTokens function
 
         return {
             access_token: at,
@@ -138,12 +138,12 @@ export class AuthService {
         };
     }
 
-    async updateRtHash(uuid: string, rt: string) {
+    async updateRtHash(cuid: string, rt: string) {
         const hashedRt = await argon2.hash(rt); // TODO: store salt
 
         await this.prisma.user.update({
             where: {
-                uuid,
+                cuid,
             },
             data: {
                 hashedRt,

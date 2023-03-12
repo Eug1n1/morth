@@ -5,7 +5,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 export class FoldersService {
     constructor(private prisma: PrismaService) { }
 
-    async getAll(userUuid: string) {
+    async getAll(userCuid: string) {
         const folders = await this.prisma.folder.findMany({
             where: {
                 OR: [
@@ -20,18 +20,18 @@ export class FoldersService {
                     {
                         isPrivate: true,
                         User: {
-                            uuid: userUuid ?? "anon",
+                            cuid: userCuid ?? "anon",
                         },
                     },
                 ],
             },
             select: {
-                uuid: true,
+                cuid: true,
                 name: true,
                 isPrivate: true,
                 User: {
                     select: {
-                        uuid: true,
+                        cuid: true,
                         username: true,
                     },
                 },
@@ -41,29 +41,29 @@ export class FoldersService {
         return folders;
     }
 
-    async getFolderMedia(userUuid: string, folderUuid: string) {
+    async getFolderMedia(userCuid: string, folderCuid: string) {
         const folder = await this.prisma.folder.findFirst({
             where: {
                 OR: [
                     {
-                        uuid: folderUuid,
+                        cuid: folderCuid,
                         isPrivate: false,
                     },
                     {
-                        uuid: folderUuid,
+                        cuid: folderCuid,
                         isPrivate: true,
                         User: {
-                            uuid: userUuid ?? "anon",
+                            cuid: userCuid ?? "anon",
                         },
                     },
                 ],
             },
             select: {
-                uuid: true,
+                cuid: true,
                 isPrivate: true,
                 User: {
                     select: {
-                        uuid: true,
+                        cuid: true,
                     },
                 },
             },
@@ -80,7 +80,7 @@ export class FoldersService {
                         isPrivate: false,
                         Folders: {
                             some: {
-                                uuid: folderUuid,
+                                cuid: folderCuid,
                             },
                         },
                     },
@@ -88,17 +88,17 @@ export class FoldersService {
                         isPrivate: true,
                         Folders: {
                             some: {
-                                uuid: folderUuid,
+                                cuid: folderCuid,
                             },
                         },
                         User: {
-                            uuid: userUuid ?? "anon",
+                            cuid: userCuid ?? "anon",
                         },
                     },
                 ],
             },
             select: {
-                uuid: true,
+                cuid: true,
                 title: true,
                 isPrivate: true,
             },

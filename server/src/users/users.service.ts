@@ -10,7 +10,7 @@ export class UsersService {
     constructor(private prisma: PrismaService) { }
 
     async getUser(
-        userUuid: string,
+        userCuid: string,
         username: string,
     ): Promise<Partial<User> | null> {
         const user = this.prisma.user.findUnique({
@@ -18,7 +18,7 @@ export class UsersService {
                 username,
             },
             select: {
-                uuid: true,
+                cuid: true,
                 username: true,
             },
         });
@@ -27,7 +27,7 @@ export class UsersService {
     }
 
     async getUsersMedia(
-        userUuid: string,
+        userCuid: string,
         username: string,
     ): Promise<Partial<Media>[]> {
         const media = this.prisma.media.findMany({
@@ -42,7 +42,7 @@ export class UsersService {
                     {
                         isPrivate: true,
                         User: {
-                            uuid: userUuid ?? "anon",
+                            cuid: userCuid ?? "anon",
                         },
                     },
                 ],
@@ -53,7 +53,7 @@ export class UsersService {
         return media;
     }
     async getUsersFolders(
-        userUuid: string,
+        userCuid: string,
         username: string,
     ): Promise<Partial<Folder>[]> {
         const folders = this.prisma.folder.findMany({
@@ -69,14 +69,14 @@ export class UsersService {
                         isPrivate: true,
                         User: {
                             username,
-                            uuid: userUuid ?? "anon",
+                            cuid: userCuid ?? "anon",
                         },
                     },
                 ],
             },
             select: {
                 name: true,
-                uuid: true,
+                cuid: true,
             },
         });
 
@@ -84,7 +84,7 @@ export class UsersService {
     }
 
     async getUsersLikes(
-        userUuid: string,
+        userCuid: string,
         username: string,
     ): Promise<{ Media: Partial<Media> }[]> {
         const likes = this.prisma.like.findMany({
@@ -101,7 +101,7 @@ export class UsersService {
                     {
                         User: {
                             username,
-                            uuid: userUuid ?? "anon",
+                            cuid: userCuid ?? "anon",
                         },
                         Media: {
                             isPrivate: true,
@@ -112,11 +112,11 @@ export class UsersService {
             select: {
                 Media: {
                     select: {
-                        uuid: true,
+                        cuid: true,
                         title: true,
                         Thumb: {
                             select: {
-                                thumbPath: true,
+                                imagePath: true,
                             },
                         },
                         _count: {
@@ -133,24 +133,24 @@ export class UsersService {
     }
 
     async getUsersViews(
-        userUuid: string,
+        userCuid: string,
         username: string,
     ): Promise<{ Media: Partial<Media> }[]> {
         const views = this.prisma.view.findMany({
             where: {
                 User: {
                     username,
-                    uuid: userUuid ?? "anon",
+                    cuid: userCuid ?? "anon",
                 },
             },
             select: {
                 Media: {
                     select: {
-                        uuid: true,
+                        cuid: true,
                         title: true,
                         Thumb: {
                             select: {
-                                thumbPath: true,
+                                imagePath: true,
                             },
                         },
                         _count: {
@@ -167,7 +167,7 @@ export class UsersService {
     }
 
     async updateUser(
-        userUuid: string,
+        userCuid: string,
         dto: UpdateUserDto,
     ): Promise<Partial<User>> {
         if (dto["hash"]) {
@@ -176,13 +176,13 @@ export class UsersService {
 
         const user = this.prisma.user.update({
             where: {
-                uuid: userUuid ?? "anon",
+                cuid: userCuid ?? "anon",
             },
             data: {
                 ...dto,
             },
             select: {
-                uuid: true,
+                cuid: true,
                 username: true,
             },
         });

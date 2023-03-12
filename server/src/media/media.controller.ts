@@ -22,25 +22,25 @@ export class MediaController {
     constructor(private mediaService: MediaService) { }
 
     @Get("/")
-    getAll(@User("sub") uuid: string) {
-        return this.mediaService.getAllMedia(uuid);
+    getAll(@User("sub") cuid: string) {
+        return this.mediaService.getAllMedia(cuid);
     }
 
-    @Get("/:uuid")
-    getOneByUuid(@User("sub") userUuid: string, @Param("uuid") uuid: string) {
-        return this.mediaService.getMediaByUuid(userUuid, uuid);
+    @Get("/:cuid")
+    getOneByCuid(@User("sub") userCuid: string, @Param("cuid") cuid: string) {
+        return this.mediaService.getMediaByCuid(userCuid, cuid);
     }
 
-    // @Get("/:uuid")
-    // getOneByUuid(@User("sub") userUuid: string, @Param("uuid") uuid: string) {
-    //     return this.mediaService.getMediaByUuid(userUuid, uuid);
+    // @Get("/:cuid")
+    // getOneByCuid(@User("sub") userCuid: string, @Param("cuid") cuid: string) {
+    //     return this.mediaService.getMediaByCuid(userCuid, cuid);
     // }
 
-    @Get("/:uuid/blob")
+    @Get("/:cuid/blob")
     @Header("Accept-Ranges", "bytes")
     async getStreamVideo(
-        @User("sub") userUuid: string,
-        @Param("uuid") mediaUuid: string,
+        @User("sub") userCuid: string,
+        @Param("cuid") mediaCuid: string,
         @Res() res: Response,
         @Headers("range") range: string,
     ) {
@@ -48,19 +48,19 @@ export class MediaController {
             headers: respHeaders,
             status,
             stream,
-        } = await this.mediaService.getMediaBlob(userUuid, mediaUuid, range);
+        } = await this.mediaService.getMediaBlob(userCuid, mediaCuid, range);
 
         res.writeHead(status, respHeaders);
         stream?.pipe(res);
     }
 
-    @Patch("/:uuid")
+    @Patch("/:cuid")
     updateMedia(
-        @User("sub") userUuid: string,
-        @Param("uuid") mediaUuid: string,
+        @User("sub") userCuid: string,
+        @Param("cuid") mediaCuid: string,
         @Body() dto: UpdateMediaDto,
     ) {
-        return this.mediaService.updateMedia(userUuid, mediaUuid, dto);
+        return this.mediaService.updateMedia(userCuid, mediaCuid, dto);
     }
 
     @Post("/upload")

@@ -8,7 +8,6 @@ import {
     Req,
     UseGuards,
 } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
 import { DisableGuard, User } from "src/common/decorators";
 import { RefreshGuard } from "src/common/guards";
 import { AuthService } from "./auth.service";
@@ -35,12 +34,12 @@ export class AuthController {
 
     @Post("/logout")
     @HttpCode(HttpStatus.OK)
-    logout(@User("sub") uuid: string) {
-        if (!uuid) {
+    logout(@User("sub") cuid: string) {
+        if (!cuid) {
             throw new ForbiddenException("go out pls");
         }
 
-        this.authService.logout(uuid);
+        this.authService.logout(cuid);
     }
 
     @DisableGuard()
@@ -48,9 +47,9 @@ export class AuthController {
     @Post("/refresh")
     @HttpCode(HttpStatus.OK)
     refreshTokens(
-        @User("sub") uuid: string,
+        @User("sub") cuid: string,
         @User("refreshToken") token: string,
     ) {
-        return this.authService.refreshTokens(uuid, token);
+        return this.authService.refreshTokens(cuid, token);
     }
 }

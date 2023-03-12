@@ -8,7 +8,7 @@ import { UpdateMediaDto } from "src/media/dto";
 export class MediaService {
     constructor(private prisma: PrismaService) { }
 
-    async getAllMedia(userUuid: string) {
+    async getAllMedia(userCuid: string) {
         const media = await this.prisma.media.findMany({
             where: {
                 OR: [
@@ -18,7 +18,7 @@ export class MediaService {
                     {
                         isPrivate: true,
                         User: {
-                            uuid: userUuid ?? "anon",
+                            cuid: userCuid ?? "anon",
                         },
                     },
                 ],
@@ -29,20 +29,20 @@ export class MediaService {
         return media;
     }
 
-    async getMediaByUuid(userUuid: string, mediaUuid: string) {
-        console.log(mediaUuid);
+    async getMediaByCuid(userCuid: string, mediaCuid: string) {
+        console.log(mediaCuid);
         const media = await this.prisma.media.findFirst({
             where: {
                 OR: [
                     {
                         isPrivate: false,
-                        uuid: mediaUuid,
+                        cuid: mediaCuid,
                     },
                     {
                         isPrivate: true,
-                        uuid: mediaUuid,
+                        cuid: mediaCuid,
                         User: {
-                            uuid: userUuid ?? "anon",
+                            cuid: userCuid ?? "anon",
                         },
                     },
                 ],
@@ -58,19 +58,19 @@ export class MediaService {
         return media;
     }
 
-    async getMediaBlob(userUuid: string, mediaUuid: string, range: string) {
+    async getMediaBlob(userCuid: string, mediaCuid: string, range: string) {
         const media = await this.prisma.media.findFirst({
             where: {
                 OR: [
                     {
                         isPrivate: false,
-                        uuid: mediaUuid,
+                        cuid: mediaCuid,
                     },
                     {
                         isPrivate: true,
-                        uuid: mediaUuid,
+                        cuid: mediaCuid,
                         User: {
-                            uuid: userUuid ?? "anon",
+                            cuid: userCuid ?? "anon",
                         },
                     },
                 ],
@@ -138,8 +138,8 @@ export class MediaService {
     }
 
     async updateMedia(
-        userUuid: string,
-        mediaUuid: string,
+        userCuid: string,
+        mediaCuid: string,
         dto: UpdateMediaDto,
     ) {
         // const tags = dto["Tags"];
@@ -147,9 +147,9 @@ export class MediaService {
 
         await this.prisma.media.updateMany({
             where: {
-                uuid: mediaUuid,
+                cuid: mediaCuid,
                 User: {
-                    uuid: userUuid,
+                    cuid: userCuid,
                 },
             },
             data: {
@@ -160,9 +160,9 @@ export class MediaService {
         //TODO: tags
         return this.prisma.media.findFirst({
             where: {
-                uuid: mediaUuid,
+                cuid: mediaCuid,
                 User: {
-                    uuid: userUuid,
+                    cuid: userCuid,
                 },
             },
             ...MediaInfoSelect,

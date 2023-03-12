@@ -1,4 +1,4 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Param } from "@nestjs/common";
 import { User } from "src/common/decorators";
 import { TagsService } from "./tags.service";
 
@@ -9,5 +9,10 @@ export class TagsController {
     @Get("/")
     async getAll(@User("sub") userUuid: string) {
         return await this.tagsService.getAll(userUuid);
+    }
+
+    @Get("/:tag/media")
+    async getTagMedia(@User("sub") userUuid: string, @Param('tag') tagName: string) {
+        return await this.tagsService.getTagMedia(userUuid, tagName);
     }
 }

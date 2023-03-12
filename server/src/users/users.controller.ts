@@ -9,46 +9,46 @@ export class UsersController {
 
     @Get("/:username")
     async getUser(
-        @User("sub") userUuid: string,
+        @User("sub") userCuid: string,
         @Param("username") username: string,
     ) {
-        return await this.usersService.getUser(userUuid, username);
+        return await this.usersService.getUser(userCuid, username);
     }
 
     @Get("/:username/media")
     getUsersMedia(
-        @User("sub") userUuid: string,
+        @User("sub") userCuid: string,
         @Param("username") username: string,
     ) {
-        return this.usersService.getUsersMedia(userUuid, username);
+        return this.usersService.getUsersMedia(userCuid, username);
     }
 
     @Get("/:username/likes")
     getUsersLikes(
-        @User("sub") userUuid: string,
+        @User("sub") userCuid: string,
         @Param("username") username: string,
     ) {
-        return this.usersService.getUsersLikes(userUuid, username);
+        return this.usersService.getUsersLikes(userCuid, username);
     }
 
     @Get("/:username/views")
     getUsersViews(
-        @User("sub") userUuid: string,
+        @User("sub") userCuid: string,
         @Param("username") username: string,
     ) {
-        return this.usersService.getUsersViews(userUuid, username);
+        return this.usersService.getUsersViews(userCuid, username);
     }
 
     @Get("/:username/folders")
     getUsersFolders(
-        @User("sub") userUuid: string,
+        @User("sub") userCuid: string,
         @Param("username") username: string,
     ) {
-        return this.usersService.getUsersFolders(userUuid, username);
+        return this.usersService.getUsersFolders(userCuid, username);
     }
 
     @Patch("/")
-    updateUser(@User("sub") uuid: string, @Body() dto: UpdateUserDto) {
-        return this.usersService.updateUser(uuid, dto);
+    updateUser(@User("sub") cuid: string, @Body() dto: UpdateUserDto) {
+        return this.usersService.updateUser(cuid, dto);
     }
 }
