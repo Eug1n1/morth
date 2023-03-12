@@ -7,7 +7,7 @@ import * as argon2 from "argon2";
 
 @Injectable()
 export class UsersService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService) { }
 
     async getUser(
         userUuid: string,
@@ -179,7 +179,7 @@ export class UsersService {
                 uuid: userUuid ?? "anon",
             },
             data: {
-                ...dto
+                ...dto,
             },
             select: {
                 uuid: true,

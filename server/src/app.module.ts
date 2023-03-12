@@ -19,15 +19,15 @@ import { DefaultGuard } from "./common/guards";
         AuthModule,
         FoldersModule,
         ConfigModule.forRoot({
-            isGlobal: true
+            isGlobal: true,
         }),
     ],
     providers: [
         {
             provide: APP_GUARD,
-            useClass: DefaultGuard
-        }
-    ]
+            useClass: DefaultGuard,
+        },
+    ],
 })
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {

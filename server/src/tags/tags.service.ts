@@ -5,7 +5,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class TagsService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService) { }
 
     async getAll(userUuid: string): Promise<Partial<Tag>[]> {
         const tags = await this.prisma.tag.findMany({
@@ -25,7 +25,7 @@ export class TagsService {
                             },
                             some: {
                                 User: {
-                                    uuid: userUuid ?? 'anon',
+                                    uuid: userUuid ?? "anon",
                                 },
                             },
                         },
@@ -35,7 +35,7 @@ export class TagsService {
             select: {
                 uuid: true,
                 name: true,
-            }
+            },
         });
 
         return tags;

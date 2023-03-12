@@ -3,7 +3,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 
 @Injectable()
 export class FoldersService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService) { }
 
     async getAll(userUuid: string) {
         const folders = await this.prisma.folder.findMany({

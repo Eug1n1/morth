@@ -6,7 +6,7 @@ import { UpdateMediaDto } from "src/media/dto";
 
 @Injectable()
 export class MediaService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService) { }
 
     async getAllMedia(userUuid: string) {
         const media = await this.prisma.media.findMany({
@@ -165,7 +165,7 @@ export class MediaService {
                     uuid: userUuid,
                 },
             },
-            ...MediaInfoSelect
-        })
+            ...MediaInfoSelect,
+        });
     }
 }

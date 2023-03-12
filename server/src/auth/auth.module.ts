@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { AuthController } from './auth.controller';
+import { AuthController } from "./auth.controller";
 import { JwtModule } from "@nestjs/jwt";
 import { AnonymousStrategy, AtStrategy, RtStrategy } from "./strategies";
 
@@ -9,4 +9,4 @@ import { AnonymousStrategy, AtStrategy, RtStrategy } from "./strategies";
     controllers: [AuthController],
     providers: [AuthService, AtStrategy, RtStrategy, AnonymousStrategy],
 })
-export class AuthModule {}
+export class AuthModule { }

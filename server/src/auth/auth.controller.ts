@@ -17,7 +17,7 @@ import { Tokens } from "./types";
 
 @Controller("api/auth")
 export class AuthController {
-    constructor(private authService: AuthService) {}
+    constructor(private authService: AuthService) { }
 
     @DisableGuard()
     @Post("/local/signup")
@@ -36,8 +36,8 @@ export class AuthController {
     @Post("/logout")
     @HttpCode(HttpStatus.OK)
     logout(@User("sub") uuid: string) {
-        if(!uuid) {
-            throw new ForbiddenException('go out pls')
+        if (!uuid) {
+            throw new ForbiddenException("go out pls");
         }
 
         this.authService.logout(uuid);

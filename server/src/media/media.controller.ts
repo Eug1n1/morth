@@ -5,14 +5,12 @@ import {
     Param,
     Res,
     Headers,
-    UseGuards,
     Patch,
     Body,
     Post,
     UploadedFile,
     UseInterceptors,
 } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { User } from "src/common/decorators";
@@ -67,8 +65,11 @@ export class MediaController {
 
     @Post("/upload")
     @UseInterceptors(FileInterceptor("file"))
-    uploadMedia(@UploadedFile() file: Express.Multer.File, @Body() body: UploadMediaDto) {
-        console.log(body.title)
+    uploadMedia(
+        @UploadedFile() file: Express.Multer.File,
+        @Body() body: UploadMediaDto,
+    ) {
+        console.log(body.title);
         console.log(file);
     }
 }
