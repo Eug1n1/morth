@@ -5,7 +5,6 @@ export const MediaInfoSelect = {
         title: true,
         User: {
             select: {
-                uuid: true,
                 username: true,
             },
         },
@@ -17,11 +16,6 @@ export const MediaInfoSelect = {
         Thumb: {
             select: {
                 thumbPath: true,
-            },
-        },
-        Tags: {
-            select: {
-                name: true,
             },
         },
         _count: {
