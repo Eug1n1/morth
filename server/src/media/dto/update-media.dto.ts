@@ -1,5 +1,5 @@
 import { Tag } from "@prisma/client";
-import { IsBoolean, IsOptional, IsString, MaxLength, MinLength, } from "class-validator";
+import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 
 export class UpdateMediaDto {
     @MaxLength(150)
@@ -18,4 +18,7 @@ export class UpdateMediaDto {
 
     @IsOptional()
     Tags?: Tag[]
+
+    @IsOptional()
+    preview?: Express.Multer.File
 }

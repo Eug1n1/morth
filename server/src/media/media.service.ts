@@ -1,12 +1,15 @@
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
-import { createReadStream, statSync } from "fs";
+import { createReadStream, ReadStream, statSync } from "fs";
 import { MediaInfoSelect } from "../common/selects";
-import { UpdateMediaDto } from "src/media/dto";
+import { UpdateMediaDto, UploadMediaDto } from "src/media/dto";
+import { Media } from "@prisma/client";
+import { Response } from "express";
+import { join } from "path";
 
 @Injectable()
 export class MediaService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService) {}
 
     async getAllMedia(userCuid: string) {
         const media = await this.prisma.media.findMany({
@@ -30,7 +33,6 @@ export class MediaService {
     }
 
     async getMediaByCuid(userCuid: string, mediaCuid: string) {
-        console.log(mediaCuid);
         const media = await this.prisma.media.findFirst({
             where: {
                 OR: [
@@ -58,7 +60,12 @@ export class MediaService {
         return media;
     }
 
-    async getMediaBlob(userCuid: string, mediaCuid: string, range: string) {
+    async getMediaBlob(
+        userCuid: string,
+        mediaCuid: string,
+        res: Response,
+        range: string,
+    ): Promise<ReadStream> {
         const media = await this.prisma.media.findFirst({
             where: {
                 OR: [
@@ -69,9 +76,7 @@ export class MediaService {
                     {
                         isPrivate: true,
                         cuid: mediaCuid,
-                        User: {
-                            cuid: userCuid ?? "anon",
-                        },
+                        userCuid: userCuid ?? "anon",
                     },
                 ],
             },
@@ -89,32 +94,15 @@ export class MediaService {
             throw new ForbiddenException("no media"); // TODO: error message
         }
 
-        const { filePath } = media;
-        const { size } = statSync(filePath);
+        const { name: mime } = media["Type"];
+        const { size } = statSync(media["filePath"]);
 
         if (!range) {
-            switch (media.Type.name) {
-                case "video":
-                    return {
-                        stream: createReadStream(filePath),
-                        status: 200,
-                        headers: {
-                            "Content-Length": size,
-                            "Content-Type": "video/mp4",
-                            //TODO: check mime type
-                        },
-                    };
-                case "image":
-                    return {
-                        stream: createReadStream(filePath),
-                        status: 200,
-                        headers: {
-                            "Content-Length": size,
-                            "Content-Type": "image/jpg",
-                            //TODO: check mime type
-                        },
-                    };
-            }
+            res.writeHead(200, {
+                "Content-Length": size,
+                "Content-Type": mime,
+            });
+            return createReadStream(media["filePath"]);
         }
 
         const parts = range.replace(/bytes=/, "").split("-");
@@ -124,48 +112,109 @@ export class MediaService {
 
         const contentLength = end - start + 1;
 
-        const stream = createReadStream(filePath, { start, end });
+        const stream = createReadStream(media["filePath"], { start, end });
 
-        return {
-            headers: {
-                "Content-Range": `bytes ${start}-${end}/${size}`,
-                "Content-Length": contentLength,
-                "Content-Type": "video/mp4",
-            },
-            status: 206,
-            stream: stream,
-        };
+        res.writeHead(206, {
+            "Content-Range": `bytes ${start}-${end}/${size}`,
+            "Content-Length": contentLength,
+            "Content-Type": mime,
+        });
+
+        return stream;
     }
 
     async updateMedia(
         userCuid: string,
         mediaCuid: string,
-        dto: UpdateMediaDto,
+        updateMediaDto: UpdateMediaDto,
     ) {
-        // const tags = dto["Tags"];
-        delete dto["Tags"];
+        const tags = updateMediaDto["Tags"];
+        delete updateMediaDto["Tags"];
 
-        await this.prisma.media.updateMany({
+        let media: Partial<Media> | null = await this.prisma.media.findFirst({
             where: {
+                userCuid: userCuid ?? "anon",
                 cuid: mediaCuid,
-                User: {
-                    cuid: userCuid,
-                },
-            },
-            data: {
-                ...dto,
             },
         });
 
-        //TODO: tags
-        return this.prisma.media.findFirst({
+        if (!media) {
+            throw new ForbiddenException(); //TODO: error
+        }
+
+        media = await this.prisma.media.update({
             where: {
                 cuid: mediaCuid,
-                User: {
-                    cuid: userCuid,
+            },
+            data: {
+                ...updateMediaDto,
+                // Thumb: {
+                //     create: TODO: upload new thumb
+                // }
+                Tags: {
+                    connectOrCreate: tags?.map((tag) => {
+                        return {
+                            where: { name: tag.name },
+                            create: { name: tag.name },
+                        };
+                    }),
                 },
             },
             ...MediaInfoSelect,
         });
+
+        return media;
+    }
+
+    async uploadFile(
+        userCuid: string,
+        uploadMediaDto: UploadMediaDto,
+        files: {
+            file: Express.Multer.File[];
+            thumb?: Express.Multer.File[];
+        },
+    ) {
+        const media = await this.prisma.media.create({
+            data: {
+                filePath: join(
+                    "/home/eug1n1/Downloads/uploads",
+                    files.file![0].filename,
+                ), //TODO: filepath
+                title: uploadMediaDto["title"] ?? files.file?.[0].originalname,
+                Type: {
+                    connectOrCreate: {
+                        where: {
+                            name: files.file[0].mimetype,
+                        },
+                        create: {
+                            name: files.file[0].mimetype,
+                        },
+                    },
+                },
+                User: {
+                    connect: {
+                        cuid: userCuid ?? "anon",
+                    },
+                },
+            },
+        });
+
+        if (files.thumb) {
+            await this.prisma.image.create({
+                data: {
+                    imagePath: join(
+                        "/home/eug1n1/Downloads/uploads/thumbs",
+                        files.thumb?.[0].filename,
+                    ),
+                    Media: {
+                        connect: {
+                            cuid: media['cuid']
+                        }
+                    }
+                },
+            });
+        }
+
+        return media;
     }
 }

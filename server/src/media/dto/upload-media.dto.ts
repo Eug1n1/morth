@@ -1,4 +1,3 @@
-import { Tag } from "@prisma/client";
 import { IsBoolean, IsOptional, IsString, MaxLength, MinLength, } from "class-validator";
 
 export class UploadMediaDto {
