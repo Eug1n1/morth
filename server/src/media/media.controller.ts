@@ -8,20 +8,17 @@ import {
     Patch,
     Body,
     Post,
-    UploadedFile,
     UseInterceptors,
     StreamableFile,
     UploadedFiles,
-    ParseFilePipeBuilder,
+    ParseFilePipe,
 } from "@nestjs/common";
-import {
-    FileFieldsInterceptor,
-    FileInterceptor,
-} from "@nestjs/platform-express";
+import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { diskStorage } from "multer";
-import { extname, join } from "path";
 import { User } from "src/common/decorators";
+import { ImageValidator } from "src/common/fileValidators/image-thumb.validator";
+import { MediaValidatoj as MediaValidator } from "src/common/fileValidators/media.validator";
 import { UpdateMediaDto, UploadMediaDto } from "./dto";
 import { MediaService } from "./media.service";
 
@@ -101,13 +98,25 @@ export class MediaController {
     )
     uploadFile(
         @User("sub") userCuid: string,
-        @UploadedFiles()
+        @UploadedFiles(
+            new ParseFilePipe({
+                validators: [
+                    new ImageValidator(),
+                    new MediaValidator({
+                        videoMaxSize: 2 * 1024 * 1024 * 1024,
+                        imageMaxSize: 10 * 1024 * 1024,
+                        audioMaxSize: 10 * 1024 * 1024,
+                    }),
+                ],
+            }),
+        )
         files: {
             file: Express.Multer.File[];
             thumb?: Express.Multer.File[];
         },
         @Body() uploadMediaDto: UploadMediaDto,
     ) {
-        return this.mediaService.uploadFile(userCuid, uploadMediaDto, files);
+        console.log("success");
+        // return this.mediaService.uploadFile(userCuid, uploadMediaDto, files);
     }
 }
