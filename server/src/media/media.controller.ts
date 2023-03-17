@@ -12,46 +12,46 @@ import {
     StreamableFile,
     UploadedFiles,
     ParseFilePipe,
+    Delete,
+    UseGuards,
 } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { diskStorage } from "multer";
-import { User } from "src/common/decorators";
-import { ImageValidator } from "src/common/fileValidators/image-thumb.validator";
+import { DisableGuard, User } from "src/common/decorators";
 import { MediaValidatoj as MediaValidator } from "src/common/fileValidators/media.validator";
-import { UpdateMediaDto, UploadMediaDto } from "./dto";
+import { JwtGuard } from "src/common/guards";
+import { AddTagToMediaDto, UpdateMediaDto, UploadMediaDto } from "./dto";
 import { MediaService } from "./media.service";
 
 @Controller("api/media")
 export class MediaController {
-    constructor(private mediaService: MediaService) {}
+    constructor(private mediaService: MediaService) { }
 
     @Get("/")
-    getAll(@User("sub") cuid: string) {
-        return this.mediaService.getAllMedia(cuid);
+    getAll(@User("sub") userId: string) {
+        return this.mediaService.getAllMedia(userId);
     }
 
-    @Get("/:cuid")
-    getOneByCuid(@User("sub") userCuid: string, @Param("cuid") cuid: string) {
-        return this.mediaService.getMediaByCuid(userCuid, cuid);
+    @Get("/:mediaId")
+    getOneMediaById(
+        @User("sub") userId: string,
+        @Param("mediaId") mediaId: string,
+    ) {
+        return this.mediaService.getMediaById(userId, mediaId);
     }
 
-    // @Get("/:cuid")
-    // getOneByCuid(@User("sub") userCuid: string, @Param("cuid") cuid: string) {
-    //     return this.mediaService.getMediaByCuid(userCuid, cuid);
-    // }
-
-    @Get("/:cuid/blob")
+    @Get("/:mediaId/blob")
     @Header("Accept-Ranges", "bytes")
     async getStreamVideo(
-        @User("sub") userCuid: string,
-        @Param("cuid") mediaCuid: string,
+        @User("sub") userId: string,
+        @Param("mediaId") mediaId: string,
         @Headers("range") range: string,
         @Res({ passthrough: true }) res: Response,
     ) {
         const stream = await this.mediaService.getMediaBlob(
-            userCuid,
-            mediaCuid,
+            userId,
+            mediaId,
             res,
             range,
         );
@@ -59,15 +59,19 @@ export class MediaController {
         return new StreamableFile(stream);
     }
 
-    @Patch("/:cuid")
+    @DisableGuard()
+    @UseGuards(JwtGuard)
+    @Patch("/:mediaId")
     updateMedia(
-        @User("sub") userCuid: string,
-        @Param("cuid") mediaCuid: string,
+        @User("sub") userId: string,
+        @Param("mediaId") mediaId: string,
         @Body() dto: UpdateMediaDto,
     ) {
-        return this.mediaService.updateMedia(userCuid, mediaCuid, dto);
+        return this.mediaService.updateMedia(userId, mediaId, dto);
     }
 
+    @DisableGuard()
+    @UseGuards(JwtGuard)
     @Post("upload")
     @UseInterceptors(
         FileFieldsInterceptor(
@@ -97,11 +101,11 @@ export class MediaController {
         ),
     )
     uploadFile(
-        @User("sub") userCuid: string,
+        @User("sub") userId: string,
         @UploadedFiles(
             new ParseFilePipe({
                 validators: [
-                    new ImageValidator(),
+                    // new ImageValidator(),
                     new MediaValidator({
                         videoMaxSize: 2 * 1024 * 1024 * 1024,
                         imageMaxSize: 10 * 1024 * 1024,
@@ -116,7 +120,53 @@ export class MediaController {
         },
         @Body() uploadMediaDto: UploadMediaDto,
     ) {
-        console.log("success");
-        // return this.mediaService.uploadFile(userCuid, uploadMediaDto, files);
+        return this.mediaService.uploadFile(userId, uploadMediaDto, files);
+    }
+
+    @DisableGuard()
+    @UseGuards(JwtGuard)
+    @Post("/:media/likes")
+    likeMedia(@User("sub") userId: string, @Param("media") mediaId: string) {
+        return this.mediaService.createLikeForMedia(userId, mediaId);
+    }
+
+    @DisableGuard()
+    @UseGuards(JwtGuard)
+    @Post("/:media/tags")
+    addTagToMedia(
+        @User("sub") userId: string,
+        @Param("media") mediaId: string,
+        @Body() addTagToMediaDto: AddTagToMediaDto,
+    ) {
+        return this.mediaService.addTagToMedia(
+            userId,
+            mediaId,
+            addTagToMediaDto,
+        );
+    }
+
+    @DisableGuard()
+    @UseGuards(JwtGuard)
+    @Delete("/:mediaId")
+    deleteMedia(
+        @User("sub") userId: string,
+        @Param("mediaId") mediaId: string,
+    ) {
+        return this.mediaService.deleteMedia(userId, mediaId);
+    }
+
+    @DisableGuard()
+    @UseGuards(JwtGuard)
+    @Delete("/:media/tags/:tagId")
+    deleteTagFromMedia(
+        @User("sub") userId: string,
+        @Param("media") mediaId: string,
+        @Param('tagId') tagId: string,
+    ) {
+        return this.mediaService.deleteTagFromMedia(
+            userId,
+            mediaId,
+            tagId,
+        );
     }
 }

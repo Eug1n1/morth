@@ -6,17 +6,18 @@ import {
     HttpStatus,
     Post,
     Req,
+    Res,
     UseGuards,
 } from "@nestjs/common";
 import { DisableGuard, User } from "src/common/decorators";
-import { RefreshGuard } from "src/common/guards";
+import { JwtGuard, RefreshGuard } from "src/common/guards";
 import { AuthService } from "./auth.service";
 import { AuthDto } from "./dto";
 import { Tokens } from "./types";
 
 @Controller("api/auth")
 export class AuthController {
-    constructor(private authService: AuthService) { }
+    constructor(private authService: AuthService) {}
 
     @DisableGuard()
     @Post("/local/signup")
@@ -28,10 +29,16 @@ export class AuthController {
     @DisableGuard()
     @Post("/local/signin")
     @HttpCode(HttpStatus.OK)
-    signinLocal(@Body() dto: AuthDto): Promise<Tokens> {
-        return this.authService.signinLocal(dto);
+    async signinLocal(
+        @Body() dto: AuthDto,
+        @Res({ passthrough: true }) res: Response,
+    ): Promise<Tokens> {
+        const tokens = this.authService.signinLocal(dto);
+        return tokens;
     }
 
+    @DisableGuard()
+    @UseGuards(JwtGuard)
     @Post("/logout")
     @HttpCode(HttpStatus.OK)
     logout(@User("sub") cuid: string) {

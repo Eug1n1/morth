@@ -11,7 +11,7 @@ datasource db {
 }
 
 model User {
-    cuid String @id @default(cuid())
+    userId String @id @default(cuid())
 
     username String  @unique
     hash     String
@@ -22,15 +22,12 @@ model User {
     Likes   Like[]
     Folders Folder[]
 
-    Preview     Image?  @relation(fields: [previewCuid], references: [cuid])
-    previewCuid String?
-
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
 model Media {
-    cuid String @id @default(cuid())
+    mediaId String @id @default(nanoid())
 
     title       String
     description String  @default("")
@@ -42,57 +39,65 @@ model Media {
     Views   View[]
     Likes   Like[]
 
-    Type     Type   @relation(fields: [typeCuid], references: [cuid])
-    typeCuid String
+    Type     Type   @relation(fields: [typeId], references: [typeId])
+    typeId String
 
-    User     User   @relation(fields: [userCuid], references: [cuid])
-    userCuid String
+    User     User   @relation(fields: [userId], references: [userId])
+    userId String
 
-    Thumb         Image  @relation(references: [cuid], fields: [thumbnailCuid])
-    thumbnailCuid String
+    Thumbnail     Thumbnail? @relation(references: [thumbId], fields: [thumbId])
+    thumbId String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@index([userId])
 }
 
-model Image {
-    cuid String @id @default(cuid())
+model Thumbnail {
+    thumbId String @id @default(cuid())
 
-    imagePath String // TODO: set default path
+    thumbPath String
 
     Media  Media[]
-    User   User[]
     Folder Folder[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-
-    @@map("Thumbnail")
 }
 
 model Folder {
-    cuid String @id @default(cuid())
+    folderId String @id @default(cuid())
 
     name      String
     isPrivate Boolean @default(false) // TODO: a nahuy nuzhno
 
     Media Media[]
 
-    User     User   @relation(fields: [userCuid], references: [cuid])
-    userCuid String
+    User     User   @relation(fields: [userId], references: [userId])
+    userId String
 
-    Preview     Image?  @relation(fields: [previewCuid], references: [cuid])
-    previewCuid String?
+    Thumbnail     Thumbnail? @relation(fields: [thumbnailId], references: [thumbId])
+    thumbnailId String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    @@unique([name, userCuid])
-    @@index([userCuid])
+    @@unique([name, userId])
+    @@index([userId])
 }
 
 model Tag {
-    cuid String @id @default(cuid())
+    tagId String @id
+
+    Media Media[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Type {
+    typeId String @id @default(cuid())
 
     name String @unique
 
@@ -102,39 +107,28 @@ model Tag {
     updatedAt DateTime @updatedAt
 }
 
-model Type {
-    cuid String @id @default(cuid())
-
-    name String
-
-    Media Media[]
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-}
-
 model View {
-    cuid Int @id @default(autoincrement())
+    viewId Int @id @default(autoincrement())
 
-    Media     Media  @relation(fields: [mediaCuid], references: [cuid])
-    mediaCuid String
+    Media     Media  @relation(fields: [mediaId], references: [mediaId])
+    mediaId String
 
-    User     User   @relation(fields: [userCuid], references: [cuid])
-    userCuid String
+    User     User   @relation(fields: [userId], references: [userId])
+    userId String
 
     createdAt DateTime @default(now())
 }
 
 model Like {
-    cuid Int @id @default(autoincrement())
+    likeId Int @id @default(autoincrement())
 
-    Media     Media  @relation(fields: [mediaCuid], references: [cuid])
-    mediaCuid String
+    Media     Media  @relation(fields: [mediaId], references: [mediaId])
+    mediaId String
 
-    User     User   @relation(fields: [userCuid], references: [cuid])
-    userCuid String
+    User     User   @relation(fields: [userId], references: [userId])
+    userId String
 
     createdAt DateTime @default(now())
 
-    @@unique([userCuid, mediaCuid])
+    @@unique([userId, mediaId])
 }

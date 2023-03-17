@@ -10,15 +10,14 @@ export class UsersService {
     constructor(private prisma: PrismaService) { }
 
     async getUser(
-        userCuid: string,
-        username: string,
+        userId: string,
+        targetUsername: string,
     ): Promise<Partial<User> | null> {
         const user = this.prisma.user.findUnique({
             where: {
-                username,
+                username: targetUsername,
             },
             select: {
-                cuid: true,
                 username: true,
             },
         });
@@ -27,8 +26,8 @@ export class UsersService {
     }
 
     async getUsersMedia(
-        userCuid: string,
-        username: string,
+        userId: string,
+        targetUsername: string,
     ): Promise<Partial<Media>[]> {
         const media = this.prisma.media.findMany({
             where: {
@@ -36,13 +35,14 @@ export class UsersService {
                     {
                         isPrivate: false,
                         User: {
-                            username: username,
+                            username: targetUsername,
                         },
                     },
                     {
                         isPrivate: true,
                         User: {
-                            cuid: userCuid ?? "anon",
+                            username: targetUsername,
+                            userId: userId ?? "anon",
                         },
                     },
                 ],
@@ -53,8 +53,8 @@ export class UsersService {
         return media;
     }
     async getUsersFolders(
-        userCuid: string,
-        username: string,
+        userId: string,
+        targetUsername: string,
     ): Promise<Partial<Folder>[]> {
         const folders = this.prisma.folder.findMany({
             where: {
@@ -62,127 +62,117 @@ export class UsersService {
                     {
                         isPrivate: false,
                         User: {
-                            username: username,
+                            username: targetUsername,
                         },
                     },
                     {
                         isPrivate: true,
                         User: {
-                            username,
-                            cuid: userCuid ?? "anon",
+                            username: targetUsername,
+                            userId,
                         },
                     },
                 ],
             },
             select: {
+                folderId: true,
                 name: true,
-                cuid: true,
             },
         });
 
         return folders;
     }
 
-    async getUsersLikes(
-        userCuid: string,
-        username: string,
-    ): Promise<{ Media: Partial<Media> }[]> {
-        const likes = this.prisma.like.findMany({
+    async getUserLikes(
+        userId: string,
+        targetUsername: string,
+    ): Promise<Partial<Media>[]> {
+        const media = this.prisma.media.findMany({
             where: {
                 OR: [
                     {
-                        User: {
-                            username,
-                        },
-                        Media: {
-                            isPrivate: false,
+                        isPrivate: false,
+                        Likes: {
+                            some: {
+                                User: {
+                                    username: targetUsername,
+                                },
+                            },
                         },
                     },
                     {
-                        User: {
-                            username,
-                            cuid: userCuid ?? "anon",
-                        },
-                        Media: {
-                            isPrivate: true,
+                        isPrivate: true,
+                        userId: userId ?? "anon",
+                        Likes: {
+                            some: {
+                                User: {
+                                    userId: userId ?? "anon",
+                                    username: targetUsername,
+                                },
+                            },
                         },
                     },
                 ],
             },
-            select: {
-                Media: {
-                    select: {
-                        cuid: true,
-                        title: true,
-                        Thumb: {
-                            select: {
-                                imagePath: true,
-                            },
-                        },
-                        _count: {
-                            select: {
-                                Views: true,
-                            },
-                        },
-                    },
-                },
-            },
         });
 
-        return likes;
+        return media;
     }
 
     async getUsersViews(
-        userCuid: string,
-        username: string,
-    ): Promise<{ Media: Partial<Media> }[]> {
-        const views = this.prisma.view.findMany({
+        userId: string,
+        targetUsername: string,
+    ): Promise<Partial<Media>[]> {
+        const media = this.prisma.media.findMany({
             where: {
-                User: {
-                    username,
-                    cuid: userCuid ?? "anon",
-                },
-            },
-            select: {
-                Media: {
-                    select: {
-                        cuid: true,
-                        title: true,
-                        Thumb: {
-                            select: {
-                                imagePath: true,
-                            },
-                        },
-                        _count: {
-                            select: {
-                                Views: true,
+                OR: [
+                    {
+                        isPrivate: false,
+                        Views: {
+                            some: {
+                                User: {
+                                    username: targetUsername,
+                                },
                             },
                         },
                     },
-                },
+                    {
+                        isPrivate: true,
+                        userId,
+                        Views: {
+                            some: {
+                                User: {
+                                    userId,
+                                    username: targetUsername,
+                                },
+                            },
+                        },
+                    },
+                ],
             },
+            ...MediaInfoSelect,
         });
 
-        return views;
+        return media;
     }
 
     async updateUser(
-        userCuid: string,
-        dto: UpdateUserDto,
+        userId: string,
+        updateUserDto: UpdateUserDto,
     ): Promise<Partial<User>> {
-        if (dto["hash"]) {
-            dto["hash"] = await argon2.hash(dto["hash"]);
+        if (updateUserDto["hash"]) {
+            updateUserDto["hash"] = await argon2.hash(updateUserDto["hash"]);
         }
 
         const user = this.prisma.user.update({
             where: {
-                cuid: userCuid ?? "anon",
+                userId,
             },
             data: {
-                ...dto,
+                ...updateUserDto,
             },
             select: {
-                cuid: true,
+                userId: true,
                 username: true,
             },
         });

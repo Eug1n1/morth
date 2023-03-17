@@ -7,12 +7,12 @@ export class TagsController {
     constructor(private tagsService: TagsService) { }
 
     @Get("/")
-    async getAll(@User("sub") userUuid: string) {
-        return await this.tagsService.getAll(userUuid);
+    async getAll(@User("sub") userId: string) {
+        return await this.tagsService.getAll(userId);
     }
 
     @Get("/:tag/media")
-    async getTagMedia(@User("sub") userUuid: string, @Param('tag') tagName: string) {
-        return await this.tagsService.getTagMedia(userUuid, tagName);
+    async getTagMedia(@User("sub") userId: string, @Param('tag') tagId: string) {
+        return await this.tagsService.getTagMedia(userId, tagId);
     }
 }

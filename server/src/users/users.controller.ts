@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch } from "@nestjs/common";
-import { User } from "src/common/decorators";
+import { Body, Controller, Get, Param, Patch, UseGuards } from "@nestjs/common";
+import { DisableGuard, User } from "src/common/decorators";
+import { JwtGuard } from "src/common/guards";
 import { UpdateUserDto } from "./dto";
 import { UsersService } from "./users.service";
 
@@ -9,46 +10,50 @@ export class UsersController {
 
     @Get("/:username")
     async getUser(
-        @User("sub") userCuid: string,
+        @User("sub") userId: string,
         @Param("username") username: string,
     ) {
-        return await this.usersService.getUser(userCuid, username);
+        return await this.usersService.getUser(userId, username);
     }
 
     @Get("/:username/media")
     getUsersMedia(
-        @User("sub") userCuid: string,
+        @User("sub") userId: string,
         @Param("username") username: string,
     ) {
-        return this.usersService.getUsersMedia(userCuid, username);
+        return this.usersService.getUsersMedia(userId, username);
     }
 
     @Get("/:username/likes")
     getUsersLikes(
-        @User("sub") userCuid: string,
+        @User("sub") userId: string,
         @Param("username") username: string,
     ) {
-        return this.usersService.getUsersLikes(userCuid, username);
+        return this.usersService.getUserLikes(userId, username);
     }
 
+    @DisableGuard()
+    @UseGuards(JwtGuard)
     @Get("/:username/views")
     getUsersViews(
-        @User("sub") userCuid: string,
+        @User("sub") userId: string,
         @Param("username") username: string,
     ) {
-        return this.usersService.getUsersViews(userCuid, username);
+        return this.usersService.getUsersViews(userId, username);
     }
 
     @Get("/:username/folders")
     getUsersFolders(
-        @User("sub") userCuid: string,
+        @User("sub") userId: string,
         @Param("username") username: string,
     ) {
-        return this.usersService.getUsersFolders(userCuid, username);
+        return this.usersService.getUsersFolders(userId, username);
     }
 
+    @DisableGuard()
+    @UseGuards(JwtGuard)
     @Patch("/")
-    updateUser(@User("sub") cuid: string, @Body() dto: UpdateUserDto) {
-        return this.usersService.updateUser(cuid, dto);
+    updateUser(@User("sub") userId: string, @Body() updateUserDto: UpdateUserDto) {
+        return this.usersService.updateUser(userId, updateUserDto);
     }
 }

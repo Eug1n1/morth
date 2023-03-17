@@ -2,17 +2,22 @@ import { ForbiddenException, Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { createReadStream, ReadStream, statSync } from "fs";
 import { MediaInfoSelect } from "../common/selects";
-import { UpdateMediaDto, UploadMediaDto } from "src/media/dto";
-import { Media } from "@prisma/client";
+import {
+    AddTagToMediaDto,
+    UpdateMediaDto,
+    UploadMediaDto,
+} from "src/media/dto";
+import { Like, Media } from "@prisma/client";
 import { Response } from "express";
 import { join } from "path";
+import { Worker } from "worker_threads";
 
 @Injectable()
 export class MediaService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService) { }
 
-    async getAllMedia(userCuid: string) {
-        const media = await this.prisma.media.findMany({
+    async getAllMedia(userId: string): Promise<Partial<Media>[]> {
+        const media = this.prisma.media.findMany({
             where: {
                 OR: [
                     {
@@ -21,7 +26,7 @@ export class MediaService {
                     {
                         isPrivate: true,
                         User: {
-                            cuid: userCuid ?? "anon",
+                            userId: userId ?? "anon",
                         },
                     },
                 ],
@@ -32,20 +37,21 @@ export class MediaService {
         return media;
     }
 
-    async getMediaByCuid(userCuid: string, mediaCuid: string) {
+    async getMediaById(
+        userId: string,
+        mediaId: string,
+    ): Promise<Partial<Media>> {
         const media = await this.prisma.media.findFirst({
             where: {
                 OR: [
                     {
                         isPrivate: false,
-                        cuid: mediaCuid,
+                        mediaId,
                     },
                     {
                         isPrivate: true,
-                        cuid: mediaCuid,
-                        User: {
-                            cuid: userCuid ?? "anon",
-                        },
+                        mediaId,
+                        userId: userId ?? "anon",
                     },
                 ],
             },
@@ -61,8 +67,8 @@ export class MediaService {
     }
 
     async getMediaBlob(
-        userCuid: string,
-        mediaCuid: string,
+        userId: string,
+        mediaId: string,
         res: Response,
         range: string,
     ): Promise<ReadStream> {
@@ -71,12 +77,12 @@ export class MediaService {
                 OR: [
                     {
                         isPrivate: false,
-                        cuid: mediaCuid,
+                        mediaId,
                     },
                     {
                         isPrivate: true,
-                        cuid: mediaCuid,
-                        userCuid: userCuid ?? "anon",
+                        mediaId,
+                        userId: userId ?? "anon",
                     },
                 ],
             },
@@ -124,56 +130,55 @@ export class MediaService {
     }
 
     async updateMedia(
-        userCuid: string,
-        mediaCuid: string,
+        userId: string,
+        mediaId: string,
         updateMediaDto: UpdateMediaDto,
-    ) {
-        const tags = updateMediaDto["Tags"];
-        delete updateMediaDto["Tags"];
+    ): Promise<Partial<Media>> {
+        return this.prisma.$transaction(async (tx) => {
+            const tags = updateMediaDto["Tags"];
+            delete updateMediaDto["Tags"];
 
-        let media: Partial<Media> | null = await this.prisma.media.findFirst({
-            where: {
-                userCuid: userCuid ?? "anon",
-                cuid: mediaCuid,
-            },
-        });
-
-        if (!media) {
-            throw new ForbiddenException(); //TODO: error
-        }
-
-        media = await this.prisma.media.update({
-            where: {
-                cuid: mediaCuid,
-            },
-            data: {
-                ...updateMediaDto,
-                // Thumb: {
-                //     create: TODO: upload new thumb
-                // }
-                Tags: {
-                    connectOrCreate: tags?.map((tag) => {
-                        return {
-                            where: { name: tag.name },
-                            create: { name: tag.name },
-                        };
-                    }),
+            let media: Partial<Media> | null = await tx.media.findFirst({
+                where: {
+                    userId: userId ?? "anon",
+                    mediaId,
                 },
-            },
-            ...MediaInfoSelect,
-        });
+            });
 
-        return media;
+            if (!media) {
+                throw new ForbiddenException(); //TODO: error
+            }
+
+            media = await tx.media.update({
+                where: {
+                    mediaId,
+                },
+                data: {
+                    ...updateMediaDto,
+                    Tags: {
+                        connectOrCreate: tags?.map((tag) => {
+                            return {
+                                where: { tagId: tag.tagId },
+                                create: { tagId: tag.tagId },
+                            };
+                        }),
+                    },
+                },
+                ...MediaInfoSelect,
+            });
+
+            return media;
+        });
     }
 
     async uploadFile(
-        userCuid: string,
+        userId: string,
         uploadMediaDto: UploadMediaDto,
         files: {
             file: Express.Multer.File[];
             thumb?: Express.Multer.File[];
         },
-    ) {
+    ): Promise<Partial<Media>> {
         const media = await this.prisma.media.create({
             data: {
                 filePath: join(
@@ -193,28 +198,157 @@ export class MediaService {
                 },
                 User: {
                     connect: {
-                        cuid: userCuid ?? "anon",
+                        userId: userId ?? "anon",
                     },
                 },
             },
         });
 
-        if (files.thumb) {
-            await this.prisma.image.create({
-                data: {
-                    imagePath: join(
-                        "/home/eug1n1/Downloads/uploads/thumbs",
-                        files.thumb?.[0].filename,
-                    ),
-                    Media: {
-                        connect: {
-                            cuid: media['cuid']
-                        }
-                    }
+        return media;
+    }
+
+    async deleteMedia(
+        userId: string,
+        mediaId: string,
+    ): Promise<Partial<Media>> {
+        return this.prisma.$transaction(async (tx) => {
+            const media = await tx.media.findFirst({
+                where: {
+                    userId,
+                    mediaId,
+                },
+                select: {
+                    mediaId: true,
+                    title: true,
                 },
             });
-        }
 
-        return media;
+            if (!media) {
+                throw new ForbiddenException("no media"); //TODO: error
+            }
+
+            const path: string = (
+                await tx.media.delete({
+                    where: {
+                        mediaId,
+                    },
+                    select: {
+                        filePath: true,
+                    },
+                })
+            )["filePath"];
+
+            const worker = new Worker("./src/utils/delete.worker.js", {
+                workerData: {
+                    path,
+                },
+            });
+
+            worker.on("message", (msg: { success: boolean; error?: any }) => {
+                if (msg.error) {
+                    throw "";
+                }
+            });
+
+            return media;
+        });
+    }
+
+    createLikeForMedia(
+        userId: string,
+        mediaId: string,
+    ): Promise<Partial<Like>> {
+        const like = this.prisma.like.create({
+            data: {
+                User: {
+                    connect: {
+                        userId,
+                    },
+                },
+                Media: {
+                    connect: {
+                        mediaId,
+                    },
+                },
+            },
+        });
+
+        return like;
+    }
+
+    addTagToMedia(
+        userId: string,
+        mediaId: string,
+        addTagToMediaDto: AddTagToMediaDto,
+    ): Promise<Partial<Media>> {
+        return this.prisma.$transaction(async (tx) => {
+            const media = await tx.media.findFirst({
+                where: {
+                    mediaId,
+                    userId,
+                    Tags: {
+                        none: {
+                            tagId: addTagToMediaDto.tag,
+                        },
+                    },
+                },
+            });
+
+            if (!media) {
+                throw new ForbiddenException();
+            }
+
+            return tx.media.update({
+                where: {
+                    mediaId,
+                },
+                data: {
+                    Tags: {
+                        connectOrCreate: {
+                            where: {
+                                tagId: addTagToMediaDto.tag,
+                            },
+                            create: {
+                                tagId: addTagToMediaDto.tag,
+                            },
+                        },
+                    },
+                },
+                ...MediaInfoSelect,
+            });
+        });
+    }
+
+    deleteTagFromMedia(userId: string, mediaId: string, tagId: string) {
+        return this.prisma.$transaction(async (tx) => {
+            const media = await tx.media.findFirst({
+                where: {
+                    mediaId,
+                    userId,
+                    Tags: {
+                        some: {
+                            tagId,
+                        },
+                    },
+                },
+            });
+
+            if (!media) {
+                throw new ForbiddenException();
+            }
+
+            return tx.media.update({
+                where: {
+                    mediaId,
+                },
+                data: {
+                    Tags: {
+                        disconnect: {
+                            tagId,
+                        },
+                    },
+                },
+            });
+        });
     }
 }

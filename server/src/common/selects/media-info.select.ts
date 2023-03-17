@@ -1,6 +1,6 @@
 export const MediaInfoSelect = {
     select: {
-        cuid: true,
+        mediaId: true,
         isPrivate: true,
         title: true,
         User: {
@@ -11,11 +11,6 @@ export const MediaInfoSelect = {
         Type: {
             select: {
                 name: true,
-            },
-        },
-        Thumb: {
-            select: {
-                imagePath: true,
             },
         },
         _count: {
