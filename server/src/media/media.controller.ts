@@ -10,12 +10,13 @@ import {
     Post,
     UseInterceptors,
     StreamableFile,
-    UploadedFiles,
     ParseFilePipe,
     Delete,
     UseGuards,
+    UploadedFile,
 } from "@nestjs/common";
-import { FileFieldsInterceptor } from "@nestjs/platform-express";
+import { ConfigService } from "@nestjs/config";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { diskStorage } from "multer";
 import { DisableGuard, User } from "src/common/decorators";
@@ -26,7 +27,10 @@ import { MediaService } from "./media.service";
 
 @Controller("api/media")
 export class MediaController {
-    constructor(private mediaService: MediaService) { }
+    constructor(
+        private mediaService: MediaService,
+        private configService: ConfigService,
+    ) { }
 
     @Get("/")
     getAll(@User("sub") userId: string) {
@@ -74,35 +78,24 @@ export class MediaController {
     @UseGuards(JwtGuard)
     @Post("upload")
     @UseInterceptors(
-        FileFieldsInterceptor(
-            [
-                { name: "file", maxCount: 1 },
-                { name: "thumb", maxCount: 1 },
-            ],
-            {
-                storage: diskStorage({
-                    destination(_, file, callback) {
-                        if (file.fieldname === "thumb") {
-                            callback(
-                                null,
-                                "/home/eug1n1/Downloads/uploads/thumbs",
-                            );
-
-                            return;
-                        }
-
-                        callback(null, "/home/eug1n1/Downloads/uploads/");
-                    },
-                    filename(_, file, callback) {
-                        callback(null, `${Date.now()}_${file.originalname}`);
-                    },
-                }),
-            },
-        ),
+        FileInterceptor("file", {
+            storage: diskStorage({
+                destination(req, file, callback) {
+                    callback(
+                        null,
+                        this.configService.get("UPLOAD_DIR") ??
+                        "/home/eug1n1/Downloads/uploads/",
+                    );
+                },
+                filename(_, file, callback) {
+                    callback(null, `${Date.now()}_${file.originalname}`);
+                },
+            }),
+        }),
     )
     uploadFile(
         @User("sub") userId: string,
-        @UploadedFiles(
+        @UploadedFile(
             new ParseFilePipe({
                 validators: [
                     // new ImageValidator(),
@@ -114,25 +107,25 @@ export class MediaController {
                 ],
             }),
         )
-        files: {
-            file: Express.Multer.File[];
-            thumb?: Express.Multer.File[];
-        },
+        file: Express.Multer.File,
         @Body() uploadMediaDto: UploadMediaDto,
     ) {
-        return this.mediaService.uploadFile(userId, uploadMediaDto, files);
+        return this.mediaService.uploadFile(userId, uploadMediaDto, file);
     }
 
     @DisableGuard()
     @UseGuards(JwtGuard)
-    @Post("/:media/likes")
-    likeMedia(@User("sub") userId: string, @Param("media") mediaId: string) {
+    @Post("/:mediaId/likes")
+    createLikeForMedia(
+        @User("sub") userId: string,
+        @Param("media") mediaId: string,
+    ) {
         return this.mediaService.createLikeForMedia(userId, mediaId);
     }
 
     @DisableGuard()
     @UseGuards(JwtGuard)
-    @Post("/:media/tags")
+    @Post("/:mediaId/tags")
     addTagToMedia(
         @User("sub") userId: string,
         @Param("media") mediaId: string,
@@ -147,6 +140,16 @@ export class MediaController {
 
     @DisableGuard()
     @UseGuards(JwtGuard)
+    @Delete("/:mediaId/likes")
+    deleteLikeFromMedia(
+        @User("sub") userId: string,
+        @Param("mediaId") mediaId: string,
+    ) {
+        return this.mediaService.deleteLikeFromMedia(userId, mediaId);
+    }
+
+    @DisableGuard()
+    @UseGuards(JwtGuard)
     @Delete("/:mediaId")
     deleteMedia(
         @User("sub") userId: string,
@@ -157,16 +160,12 @@ export class MediaController {
 
     @DisableGuard()
     @UseGuards(JwtGuard)
-    @Delete("/:media/tags/:tagId")
+    @Delete("/:mediaId/tags/:tagId")
     deleteTagFromMedia(
         @User("sub") userId: string,
         @Param("media") mediaId: string,
-        @Param('tagId') tagId: string,
+        @Param("tagId") tagId: string,
     ) {
-        return this.mediaService.deleteTagFromMedia(
-            userId,
-            mediaId,
-            tagId,
-        );
+        return this.mediaService.deleteTagFromMedia(userId, mediaId, tagId);
     }
 }

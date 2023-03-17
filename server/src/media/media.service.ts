@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
+import {
+    HttpException,
+    HttpStatus,
+    Injectable,
+} from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 import { createReadStream, ReadStream, statSync } from "fs";
 import { MediaInfoSelect } from "../common/selects";
@@ -11,10 +15,11 @@ import { Like, Media } from "@prisma/client";
 import { Response } from "express";
 import { join } from "path";
 import { Worker } from "worker_threads";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MediaService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService, private config: ConfigService) { }
 
     async getAllMedia(userId: string): Promise<Partial<Media>[]> {
         const media = this.prisma.media.findMany({
@@ -60,7 +65,7 @@ export class MediaService {
 
         if (!media) {
             //TODO: throw error
-            throw new ForbiddenException("no media");
+            throw new HttpException("media not found", HttpStatus.NOT_FOUND); //TODO: error
         }
 
         return media;
@@ -97,7 +102,7 @@ export class MediaService {
         });
 
         if (!media) {
-            throw new ForbiddenException("no media"); // TODO: error message
+            throw new HttpException("media not found", HttpStatus.NOT_FOUND); //TODO: error
         }
 
         const { name: mime } = media["Type"];
@@ -146,7 +151,10 @@ export class MediaService {
             });
 
             if (!media) {
-                throw new ForbiddenException(); //TODO: error
+                throw new HttpException(
+                    "media not found",
+                    HttpStatus.NOT_FOUND,
+                ); //TODO: error
             }
 
             media = await tx.media.update({
@@ -174,31 +182,29 @@ export class MediaService {
     async uploadFile(
         userId: string,
         uploadMediaDto: UploadMediaDto,
-        files: {
-            file: Express.Multer.File[];
-            thumb?: Express.Multer.File[];
-        },
+        file: Express.Multer.File,
     ): Promise<Partial<Media>> {
         const media = await this.prisma.media.create({
             data: {
                 filePath: join(
-                    "/home/eug1n1/Downloads/uploads",
-                    files.file![0].filename,
+                    this.config.get<string>('UPLOAD_DIR') ?? '/home/eug1n1/Downloads/uploads/',
+                    // "/home/eug1n1/Downloads/uploads", // TODO: move to config
+                    file.filename,
                 ), //TODO: filepath
-                title: uploadMediaDto["title"] ?? files.file?.[0].originalname,
+                title: uploadMediaDto["title"] ?? file.originalname,
                 Type: {
                     connectOrCreate: {
                         where: {
-                            name: files.file[0].mimetype,
+                            name: file.mimetype,
                         },
                         create: {
-                            name: files.file[0].mimetype,
+                            name: file.mimetype,
                         },
                     },
                 },
                 User: {
                     connect: {
-                        userId: userId ?? "anon",
+                        userId,
                     },
                 },
             },
@@ -224,7 +230,10 @@ export class MediaService {
             });
 
             if (!media) {
-                throw new ForbiddenException("no media"); //TODO: error
+                throw new HttpException(
+                    "media not found",
+                    HttpStatus.NOT_FOUND,
+                ); //TODO: error
             }
 
             const path: string = (
@@ -258,22 +267,62 @@ export class MediaService {
         userId: string,
         mediaId: string,
     ): Promise<Partial<Like>> {
-        const like = this.prisma.like.create({
-            data: {
-                User: {
-                    connect: {
-                        userId,
+        return this.prisma.$transaction(async (tx) => {
+            const media = await this.prisma.media.findUnique({
+                where: {
+                    mediaId,
+                },
+            });
+
+            if (!media) {
+                throw new HttpException(
+                    "media not found",
+                    HttpStatus.NOT_FOUND,
+                ); //TODO: error
+            }
+
+            return this.prisma.like.create({
+                data: {
+                    User: {
+                        connect: {
+                            userId,
+                        },
+                    },
+                    Media: {
+                        connect: {
+                            mediaId,
+                        },
                     },
                 },
-                Media: {
-                    connect: {
+            });
+        });
+    }
+
+    deleteLikeFromMedia(
+        userId: string,
+        mediaId: string,
+    ): Promise<Partial<Like>> {
+        return this.prisma.$transaction(async (tx) => {
+            const like = await this.prisma.like.findFirst({
+                where: {
+                    userId,
+                    mediaId,
+                },
+            });
+
+            if (!like) {
+                throw new HttpException("like not found", HttpStatus.NOT_FOUND); //TODO: error
+            }
+
+            return this.prisma.like.delete({
+                where: {
+                    userId_mediaId: {
+                        userId,
                         mediaId,
                     },
                 },
-            },
+            });
         });
-
-        return like;
     }
 
     addTagToMedia(
@@ -295,7 +344,10 @@ export class MediaService {
             });
 
             if (!media) {
-                throw new ForbiddenException();
+                throw new HttpException(
+                    "media not found",
+                    HttpStatus.NOT_FOUND,
+                ); //TODO: error
             }
 
             return tx.media.update({
@@ -334,7 +386,10 @@ export class MediaService {
             });
 
             if (!media) {
-                throw new ForbiddenException();
+                throw new HttpException(
+                    "media not found",
+                    HttpStatus.NOT_FOUND,
+                ); //TODO: error
             }
 
             return tx.media.update({
