@@ -17,23 +17,20 @@ import { Tokens } from "./types";
 
 @Controller("api/auth")
 export class AuthController {
-    constructor(private authService: AuthService) {}
+    constructor(private authService: AuthService) { }
 
     @DisableGuard()
     @Post("/local/signup")
     @HttpCode(HttpStatus.CREATED)
-    signupLocal(@Body() dto: AuthDto): Promise<Tokens> {
-        return this.authService.signupLocal(dto);
+    signupLocal(@Body() authDto: AuthDto): Promise<Tokens> {
+        return this.authService.signupLocal(authDto);
     }
 
     @DisableGuard()
     @Post("/local/signin")
     @HttpCode(HttpStatus.OK)
-    async signinLocal(
-        @Body() dto: AuthDto,
-        @Res({ passthrough: true }) res: Response,
-    ): Promise<Tokens> {
-        const tokens = this.authService.signinLocal(dto);
+    async signinLocal(@Body() authDto: AuthDto): Promise<Tokens> {
+        const tokens = this.authService.signinLocal(authDto);
         return tokens;
     }
 
@@ -41,12 +38,8 @@ export class AuthController {
     @UseGuards(JwtGuard)
     @Post("/logout")
     @HttpCode(HttpStatus.OK)
-    logout(@User("sub") cuid: string) {
-        if (!cuid) {
-            throw new ForbiddenException("go out pls");
-        }
-
-        this.authService.logout(cuid);
+    logout(@User("sub") userId: string) {
+        this.authService.logout(userId);
     }
 
     @DisableGuard()
@@ -54,9 +47,9 @@ export class AuthController {
     @Post("/refresh")
     @HttpCode(HttpStatus.OK)
     refreshTokens(
-        @User("sub") cuid: string,
+        @User("sub") userId: string,
         @User("refreshToken") token: string,
     ) {
-        return this.authService.refreshTokens(cuid, token);
+        return this.authService.refreshTokens(userId, token);
     }
 }

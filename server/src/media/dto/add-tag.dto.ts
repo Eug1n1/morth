@@ -1,3 +1,8 @@
+import { IsString, MaxLength, MinLength } from "class-validator"
+
 export class AddTagToMediaDto {
-    tag: string
+    @IsString()
+    @MaxLength(30)
+    @MinLength(2)
+    tagId: string
 }

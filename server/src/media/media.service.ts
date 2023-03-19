@@ -184,11 +184,11 @@ export class MediaService {
         uploadMediaDto: UploadMediaDto,
         file: Express.Multer.File,
     ): Promise<Partial<Media>> {
+        console.log(userId)
         const media = await this.prisma.media.create({
             data: {
                 filePath: join(
                     this.config.get<string>('UPLOAD_DIR') ?? '/home/eug1n1/Downloads/uploads/',
-                    // "/home/eug1n1/Downloads/uploads", // TODO: move to config
                     file.filename,
                 ), //TODO: filepath
                 title: uploadMediaDto["title"] ?? file.originalname,
@@ -325,7 +325,7 @@ export class MediaService {
         });
     }
 
-    addTagToMedia(
+    async addTagToMedia(
         userId: string,
         mediaId: string,
         addTagToMediaDto: AddTagToMediaDto,
@@ -337,7 +337,7 @@ export class MediaService {
                     userId,
                     Tags: {
                         none: {
-                            tagId: addTagToMediaDto.tag,
+                            tagId: addTagToMediaDto.tagId,
                         },
                     },
                 },
@@ -345,23 +345,23 @@ export class MediaService {
 
             if (!media) {
                 throw new HttpException(
-                    "media not found",
+                    "not found",
                     HttpStatus.NOT_FOUND,
                 ); //TODO: error
             }
 
             return tx.media.update({
                 where: {
-                    mediaId,
+                    mediaId: mediaId,
                 },
                 data: {
                     Tags: {
                         connectOrCreate: {
                             where: {
-                                tagId: addTagToMediaDto.tag,
+                                tagId: addTagToMediaDto.tagId,
                             },
                             create: {
-                                tagId: addTagToMediaDto.tag,
+                                tagId: addTagToMediaDto.tagId,
                             },
                         },
                     },
@@ -406,4 +406,9 @@ export class MediaService {
             });
         });
     }
+
+    // createUserView(userId: string, mediaId: string) {
+    //     return this.prisma.$transaction(tx => {
+    //     })
+    // }
 }

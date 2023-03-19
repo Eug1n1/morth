@@ -11,7 +11,7 @@ datasource db {
 }
 
 model User {
-    userId String @id @default(cuid())
+    userId String @id @default(nanoid())
 
     username String  @unique
     hash     String
@@ -32,7 +32,7 @@ model Media {
     title       String
     description String  @default("")
     filePath    String  @unique
-    isPrivate   Boolean @default(false) // TODO: a nahuy nuzhno
+    isPrivate   Boolean @default(false)
 
     Tags    Tag[]
     Folders Folder[]
@@ -55,7 +55,7 @@ model Media {
 }
 
 model Thumbnail {
-    thumbId String @id @default(cuid())
+    thumbId String @id @default(nanoid())
 
     thumbPath String
 
@@ -67,7 +67,7 @@ model Thumbnail {
 }
 
 model Folder {
-    folderId String @id @default(cuid())
+    folderId String @id @default(nanoid())
 
     name      String
     isPrivate Boolean @default(false) // TODO: a nahuy nuzhno
@@ -97,7 +97,7 @@ model Tag {
 }
 
 model Type {
-    typeId String @id @default(cuid())
+    typeId String @id @default(nanoid())
 
     name String @unique
 

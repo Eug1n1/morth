@@ -14,13 +14,14 @@ import {
     Delete,
     UseGuards,
     UploadedFile,
+    Req,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { diskStorage } from "multer";
 import { DisableGuard, User } from "src/common/decorators";
-import { MediaValidatoj as MediaValidator } from "src/common/fileValidators/media.validator";
+import { MediaValidator } from "src/common/fileValidators/media.validator";
 import { JwtGuard } from "src/common/guards";
 import { AddTagToMediaDto, UpdateMediaDto, UploadMediaDto } from "./dto";
 import { MediaService } from "./media.service";
@@ -30,7 +31,7 @@ export class MediaController {
     constructor(
         private mediaService: MediaService,
         private configService: ConfigService,
-    ) { }
+    ) {}
 
     @Get("/")
     getAll(@User("sub") userId: string) {
@@ -83,8 +84,8 @@ export class MediaController {
                 destination(req, file, callback) {
                     callback(
                         null,
-                        this.configService.get("UPLOAD_DIR") ??
-                        "/home/eug1n1/Downloads/uploads/",
+                        process.env["UPLOAD_DIR"] ??
+                            "/home/eug1n1/Downloads/uploads/",
                     );
                 },
                 filename(_, file, callback) {
@@ -118,7 +119,7 @@ export class MediaController {
     @Post("/:mediaId/likes")
     createLikeForMedia(
         @User("sub") userId: string,
-        @Param("media") mediaId: string,
+        @Param("mediaId") mediaId: string,
     ) {
         return this.mediaService.createLikeForMedia(userId, mediaId);
     }
@@ -128,7 +129,7 @@ export class MediaController {
     @Post("/:mediaId/tags")
     addTagToMedia(
         @User("sub") userId: string,
-        @Param("media") mediaId: string,
+        @Param("mediaId") mediaId: string,
         @Body() addTagToMediaDto: AddTagToMediaDto,
     ) {
         return this.mediaService.addTagToMedia(
@@ -163,7 +164,7 @@ export class MediaController {
     @Delete("/:mediaId/tags/:tagId")
     deleteTagFromMedia(
         @User("sub") userId: string,
-        @Param("media") mediaId: string,
+        @Param("mediaId") mediaId: string,
         @Param("tagId") tagId: string,
     ) {
         return this.mediaService.deleteTagFromMedia(userId, mediaId, tagId);
