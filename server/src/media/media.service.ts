@@ -184,7 +184,6 @@ export class MediaService {
         uploadMediaDto: UploadMediaDto,
         file: Express.Multer.File,
     ): Promise<Partial<Media>> {
-        console.log(userId)
         const media = await this.prisma.media.create({
             data: {
                 filePath: join(
@@ -208,6 +207,7 @@ export class MediaService {
                     },
                 },
             },
+            ...MediaInfoSelect
         });
 
         return media;

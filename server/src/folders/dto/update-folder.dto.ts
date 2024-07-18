@@ -9,8 +9,8 @@ export class UpdateFolderDto {
     @IsOptional()
     isPrivate?: boolean;
 
-    @IsOptional()
-    Media?: Media[]
+    // @IsOptional()
+    // Media?: Media[]
 
     // @IsOptional()
     // Preview?: Express.Multer.File

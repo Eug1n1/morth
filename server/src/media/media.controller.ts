@@ -14,30 +14,36 @@ import {
     Delete,
     UseGuards,
     UploadedFile,
-    Req,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { FileInterceptor } from "@nestjs/platform-express";
+import {
+    ApiBearerAuth,
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiTags,
+} from "@nestjs/swagger";
 import { Response } from "express";
 import { diskStorage } from "multer";
 import { DisableGuard, User } from "src/common/decorators";
+import { MediaEntity } from "src/common/entities";
 import { MediaValidator } from "src/common/fileValidators/media.validator";
 import { JwtGuard } from "src/common/guards";
 import { AddTagToMediaDto, UpdateMediaDto, UploadMediaDto } from "./dto";
 import { MediaService } from "./media.service";
 
+@ApiTags("media")
 @Controller("api/media")
 export class MediaController {
-    constructor(
-        private mediaService: MediaService,
-        private configService: ConfigService,
-    ) {}
+    constructor(private mediaService: MediaService) {}
 
+    @ApiOkResponse({ type: MediaEntity, isArray: true })
+    @ApiBearerAuth()
     @Get("/")
     getAll(@User("sub") userId: string) {
         return this.mediaService.getAllMedia(userId);
     }
 
+    @ApiOkResponse({ type: MediaEntity })
     @Get("/:mediaId")
     getOneMediaById(
         @User("sub") userId: string,
@@ -64,6 +70,8 @@ export class MediaController {
         return new StreamableFile(stream);
     }
 
+    @ApiOkResponse({ type: MediaEntity })
+    @ApiBearerAuth()
     @DisableGuard()
     @UseGuards(JwtGuard)
     @Patch("/:mediaId")
@@ -75,9 +83,11 @@ export class MediaController {
         return this.mediaService.updateMedia(userId, mediaId, dto);
     }
 
+    @ApiCreatedResponse({ type: MediaEntity })
+    @ApiBearerAuth()
     @DisableGuard()
     @UseGuards(JwtGuard)
-    @Post("upload")
+    @Post("/")
     @UseInterceptors(
         FileInterceptor("file", {
             storage: diskStorage({
@@ -114,6 +124,7 @@ export class MediaController {
         return this.mediaService.uploadFile(userId, uploadMediaDto, file);
     }
 
+    @ApiBearerAuth()
     @DisableGuard()
     @UseGuards(JwtGuard)
     @Post("/:mediaId/likes")
@@ -124,6 +135,7 @@ export class MediaController {
         return this.mediaService.createLikeForMedia(userId, mediaId);
     }
 
+    @ApiBearerAuth()
     @DisableGuard()
     @UseGuards(JwtGuard)
     @Post("/:mediaId/tags")
@@ -139,6 +151,7 @@ export class MediaController {
         );
     }
 
+    @ApiBearerAuth()
     @DisableGuard()
     @UseGuards(JwtGuard)
     @Delete("/:mediaId/likes")
@@ -149,6 +162,7 @@ export class MediaController {
         return this.mediaService.deleteLikeFromMedia(userId, mediaId);
     }
 
+    @ApiBearerAuth()
     @DisableGuard()
     @UseGuards(JwtGuard)
     @Delete("/:mediaId")
@@ -159,6 +173,7 @@ export class MediaController {
         return this.mediaService.deleteMedia(userId, mediaId);
     }
 
+    @ApiBearerAuth()
     @DisableGuard()
     @UseGuards(JwtGuard)
     @Delete("/:mediaId/tags/:tagId")

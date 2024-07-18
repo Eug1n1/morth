@@ -9,15 +9,17 @@ import {
     Res,
     UseGuards,
 } from "@nestjs/common";
+import { ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { DisableGuard, User } from "src/common/decorators";
 import { JwtGuard, RefreshGuard } from "src/common/guards";
 import { AuthService } from "./auth.service";
 import { AuthDto } from "./dto";
 import { Tokens } from "./types";
 
+@ApiTags("auth")
 @Controller("api/auth")
 export class AuthController {
-    constructor(private authService: AuthService) { }
+    constructor(private authService: AuthService) {}
 
     @DisableGuard()
     @Post("/local/signup")

@@ -17,7 +17,7 @@ export class AuthService {
         private prisma: PrismaService,
         private jwtService: JwtService,
         private configService: ConfigService,
-    ) { }
+    ) {}
 
     async signupLocal(authDto: AuthDto): Promise<Tokens> {
         const hash = await argon2.hash(authDto["password"]);

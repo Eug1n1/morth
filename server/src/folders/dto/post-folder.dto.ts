@@ -8,6 +8,6 @@ export class PostFolderDto {
     @IsOptional()
     isPrivate?: boolean;
 
-    @IsOptional()
-    Media?: Media[]
+    // @IsOptional()
+    // Media?: Media[]
 }

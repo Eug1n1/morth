@@ -114,6 +114,7 @@ export class UsersService {
                     },
                 ],
             },
+            ...MediaInfoSelect
         });
 
         return media;

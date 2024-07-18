@@ -17,8 +17,10 @@ export class UpdateMediaDto {
     isPrivate?: boolean;
 
     @IsOptional()
-    Tags?: Tag[]
+    Tags?: {
+        tagId: string
+    }[]
 
-    @IsOptional()
-    preview?: Express.Multer.File
+    // @IsOptional()
+    // preview?: Express.Multer.File
 }

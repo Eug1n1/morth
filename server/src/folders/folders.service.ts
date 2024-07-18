@@ -198,10 +198,10 @@ export class FoldersService {
                 },
                 data: {
                     ...updateFolderDto,
-                    Media: {
-                        // TODO: thumb
-                        connect: updateFolderDto["Media"],
-                    },
+                    // Media: {
+                    //     // TODO: thumb
+                    //     connect: updateFolderDto["Media"],
+                    // },
                 },
                 select: {
                     // TODO: select
